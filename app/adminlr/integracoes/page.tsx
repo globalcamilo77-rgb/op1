@@ -6,7 +6,6 @@ import {
   MapPin, 
   MessageCircle, 
   Tag, 
-  Truck, 
   RefreshCw, 
   Save, 
   Plus, 
@@ -18,7 +17,7 @@ import {
 } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 
-type Tab = 'settings' | 'regions' | 'whatsapp' | 'offers' | 'dumpsters'
+type Tab = 'settings' | 'regions' | 'whatsapp' | 'offers'
 
 interface SiteSettings {
   id?: string
@@ -65,16 +64,7 @@ interface SiteOffer {
   order_index: number
 }
 
-interface DumpsterSize {
-  id?: string
-  site_id: string
-  size: string
-  title: string
-  description: string
-  price: number
-  active: boolean
-  order_index: number
-}
+
 
 const SITE_ID = 'alfaconstrucao'
 
@@ -97,7 +87,7 @@ export default function IntegracoesPage() {
   const [regions, setRegions] = useState<Region[]>([])
   const [whatsappNumbers, setWhatsappNumbers] = useState<WhatsAppNumber[]>([])
   const [offers, setOffers] = useState<SiteOffer[]>([])
-  const [dumpsters, setDumpsters] = useState<DumpsterSize[]>([])
+  
 
   const supabase = getSupabase()
 
@@ -146,14 +136,7 @@ export default function IntegracoesPage() {
             .order('order_index')
           if (offersData) setOffers(offersData)
           break
-        case 'dumpsters':
-          const { data: dumpstersData } = await supabase
-            .from('dumpster_sizes')
-            .select('*')
-            .eq('site_id', SITE_ID)
-            .order('order_index')
-          if (dumpstersData) setDumpsters(dumpstersData)
-          break
+        
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
@@ -237,31 +220,13 @@ export default function IntegracoesPage() {
     }
   }
 
-  const saveDumpsters = async () => {
-    setSaving(true)
-    try {
-      await supabase.from('dumpster_sizes').delete().eq('site_id', SITE_ID)
-      if (dumpsters.length > 0) {
-        const { error } = await supabase
-          .from('dumpster_sizes')
-          .insert(dumpsters.map((d, i) => ({ ...d, site_id: SITE_ID, order_index: i + 1 })))
-        if (error) throw error
-      }
-      setMessage({ type: 'success', text: 'Tamanhos de cacamba salvos com sucesso!' })
-    } catch (error) {
-      console.error('Erro ao salvar:', error)
-      setMessage({ type: 'error', text: 'Erro ao salvar tamanhos' })
-    } finally {
-      setSaving(false)
-    }
-  }
+  
 
   const tabs = [
     { id: 'settings' as Tab, label: 'Configuracoes', icon: Settings },
     { id: 'regions' as Tab, label: 'Regioes', icon: MapPin },
     { id: 'whatsapp' as Tab, label: 'WhatsApp', icon: MessageCircle },
     { id: 'offers' as Tab, label: 'Ofertas', icon: Tag },
-    { id: 'dumpsters' as Tab, label: 'Cacambas', icon: Truck },
   ]
 
   return (
@@ -638,106 +603,7 @@ export default function IntegracoesPage() {
             </div>
           )}
 
-          {/* Dumpsters Tab */}
-          {activeTab === 'dumpsters' && (
-            <div className="space-y-4">
-              <button
-                onClick={() => setDumpsters([...dumpsters, { 
-                  site_id: SITE_ID, 
-                  size: '', 
-                  title: '', 
-                  description: '',
-                  price: 0,
-                  active: true,
-                  order_index: dumpsters.length + 1
-                }])}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                <Plus size={18} />
-                Adicionar Tamanho
-              </button>
-              <div className="space-y-2">
-                {dumpsters.map((dumpster, index) => (
-                  <div key={index} className="p-4 bg-secondary/30 rounded-lg space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <input
-                        type="text"
-                        value={dumpster.size}
-                        onChange={(e) => {
-                          const updated = [...dumpsters]
-                          updated[index].size = e.target.value
-                          setDumpsters(updated)
-                        }}
-                        placeholder="Tamanho (ex: 3m3, 5m3)"
-                        className="px-3 py-2 border rounded-lg"
-                      />
-                      <input
-                        type="text"
-                        value={dumpster.title}
-                        onChange={(e) => {
-                          const updated = [...dumpsters]
-                          updated[index].title = e.target.value
-                          setDumpsters(updated)
-                        }}
-                        placeholder="Titulo"
-                        className="px-3 py-2 border rounded-lg"
-                      />
-                      <input
-                        type="number"
-                        value={dumpster.price}
-                        onChange={(e) => {
-                          const updated = [...dumpsters]
-                          updated[index].price = Number(e.target.value)
-                          setDumpsters(updated)
-                        }}
-                        placeholder="Preco"
-                        className="px-3 py-2 border rounded-lg"
-                      />
-                    </div>
-                    <textarea
-                      value={dumpster.description}
-                      onChange={(e) => {
-                        const updated = [...dumpsters]
-                        updated[index].description = e.target.value
-                        setDumpsters(updated)
-                      }}
-                      placeholder="Descricao"
-                      rows={2}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={dumpster.active}
-                          onChange={(e) => {
-                            const updated = [...dumpsters]
-                            updated[index].active = e.target.checked
-                            setDumpsters(updated)
-                          }}
-                        />
-                        Ativo
-                      </label>
-                      <button
-                        onClick={() => setDumpsters(dumpsters.filter((_, i) => i !== index))}
-                        className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={saveDumpsters}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-[var(--orange-primary)] text-white rounded-lg hover:bg-[var(--orange-dark)] disabled:opacity-50"
-              >
-                <Save size={18} />
-                {saving ? 'Salvando...' : 'Salvar Tamanhos de Cacamba'}
-              </button>
-            </div>
-          )}
+          
         </>
       )}
     </div>
