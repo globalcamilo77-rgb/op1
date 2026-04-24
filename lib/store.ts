@@ -4,34 +4,25 @@ import type { User } from './types'
 
 const ADMIN_SESSION_COOKIE = 'alfa-admin-session'
 
-const DEMO_USERS: Record<string, { passwordHash: string; user: User }> = {
+const DEMO_USERS: Record<string, { password: string; user: User }> = {
   'admin@alfaconstrucao.com': {
-    passwordHash: process.env.NEXT_PUBLIC_ADMIN_PW_HASH ?? '',
+    password: 'admin123',
     user: {
       id: '1',
       email: 'admin@alfaconstrucao.com',
-      name: 'Admin User',
+      name: 'Administrador',
       role: 'admin',
     },
   },
   'superadmin@alfaconstrucao.com': {
-    passwordHash: process.env.NEXT_PUBLIC_SUPERADMIN_PW_HASH ?? '',
+    password: 'super123',
     user: {
       id: '2',
       email: 'superadmin@alfaconstrucao.com',
-      name: 'SuperAdmin User',
+      name: 'Super Admin',
       role: 'superadmin',
     },
   },
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
 }
 
 interface AuthState {
@@ -48,13 +39,10 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       login: async (email: string, password: string) => {
         const demoUser = DEMO_USERS[email]
-        if (demoUser && demoUser.passwordHash) {
-          const inputHash = await hashPassword(password)
-          if (inputHash === demoUser.passwordHash) {
-            set({ user: demoUser.user, isAuthenticated: true })
-            document.cookie = `${ADMIN_SESSION_COOKIE}=1; path=/; SameSite=Strict`
-            return { success: true }
-          }
+        if (demoUser && demoUser.password === password) {
+          set({ user: demoUser.user, isAuthenticated: true })
+          document.cookie = `${ADMIN_SESSION_COOKIE}=1; path=/; SameSite=Strict`
+          return { success: true }
         }
         return { success: false, error: 'Credenciais invalidas' }
       },
@@ -65,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'alfaconstrucao-auth',
+      version: 2,
     }
   )
 )
