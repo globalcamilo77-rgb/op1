@@ -146,7 +146,6 @@ export function StoreHeader() {
   return (
     <>
       <NotificationBar />
-      <HeaderTop />
       <MainHeader />
     </>
   )
