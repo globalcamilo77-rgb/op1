@@ -21,6 +21,7 @@ import {
   QrCode,
   MapPin,
   Wallet,
+  Plug,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ const superAdminLinks = [
   { href: '/adminlr/pagamentos', label: 'Pagamentos', icon: Wallet },
   { href: '/adminlr/pix', label: 'PIX', icon: QrCode },
   { href: '/adminlr/sincronizar', label: 'Sincronizar', icon: Cloud },
+  { href: '/adminlr/integracoes', label: 'Integracoes', icon: Plug },
   { href: '/adminlr/relatorios', label: 'Relatorios', icon: BarChart3 },
   { href: '/adminlr/backup', label: 'Backup', icon: HardDrive },
 ]
