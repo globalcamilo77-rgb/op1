@@ -19,7 +19,7 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
   const { slug } = use(params)
   const category = CATEGORIES.find((cat) => cat.slug === slug)
 
-  const { products } = useProductsStore()
+  const { products, loadFromSupabase } = useProductsStore()
 
   const [activeSub, setActiveSub] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -27,7 +27,8 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   const allProducts = mounted ? products : []
 

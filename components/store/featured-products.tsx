@@ -11,7 +11,7 @@ import { ProductCard } from './product-card'
 const MAX_PER_CATEGORY = 4
 
 export function FeaturedProducts() {
-  const { products } = useProductsStore()
+  const { products, loadFromSupabase } = useProductsStore()
   const eyebrow = useAppearanceStore((state) => state.featuredEyebrow)
   const title = useAppearanceStore((state) => state.featuredTitle)
   const subtitle = useAppearanceStore((state) => state.featuredSubtitle)
@@ -19,7 +19,9 @@ export function FeaturedProducts() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    // Carregar produtos do Supabase ao montar
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   const activeProducts = mounted ? products.filter((p) => p.active) : []
 

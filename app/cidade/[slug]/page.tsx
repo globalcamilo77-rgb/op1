@@ -70,9 +70,12 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   const router = useRouter()
 
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
-  const { products } = useProductsStore()
+  const { products, loadFromSupabase } = useProductsStore()
   const { addItem } = useCartStore()
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
 
