@@ -186,11 +186,33 @@ export const useCitiesStore = create<CitiesState>()(
       getContactForCity: (slug) => {
         const city = get().cities.find((c) => c.slug === slug)
         if (!city || !city.active) return null
+        
+        // Filtrar apenas contatos ativos
         const activeContacts = city.contacts.filter((c) => c.active && c.number)
         if (activeContacts.length === 0) return null
-        const windowMs = Math.max(1, city.rotationIntervalMinutes) * 60 * 1000
-        const currentWindow = Math.floor(Date.now() / windowMs)
-        return activeContacts[currentWindow % activeContacts.length]
+        
+        // Extrair DDD da cidade dos contatos (pegar o DDD mais comum)
+        const dddCounts: Record<string, number> = {}
+        activeContacts.forEach((c) => {
+          const digits = c.number.replace(/\D/g, '')
+          // DDD esta nas posicoes 2-3 (depois do 55)
+          const ddd = digits.length >= 4 ? digits.slice(2, 4) : ''
+          if (ddd) {
+            dddCounts[ddd] = (dddCounts[ddd] || 0) + 1
+          }
+        })
+        
+        // Se todos os contatos tem o mesmo DDD, fazer rotacao
+        const uniqueDDDs = Object.keys(dddCounts)
+        if (uniqueDDDs.length === 1) {
+          // Todos os numeros tem o mesmo DDD - fazer rotacao
+          const windowMs = Math.max(1, city.rotationIntervalMinutes) * 60 * 1000
+          const currentWindow = Math.floor(Date.now() / windowMs)
+          return activeContacts[currentWindow % activeContacts.length]
+        }
+        
+        // DDDs diferentes - nao fazer rotacao, retornar o primeiro
+        return activeContacts[0]
       },
     }),
     {

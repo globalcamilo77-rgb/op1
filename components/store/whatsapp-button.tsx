@@ -2,11 +2,14 @@
 
 import { MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useShallow } from 'zustand/react/shallow'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAppearanceStore } from '@/lib/appearance-store'
+import { useCitiesStore } from '@/lib/cities-store'
 
 export function WhatsAppButton() {
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const { contacts, defaultMessage, rotationIntervalMinutes } = useWhatsAppStore(
     useShallow((state) => ({
@@ -16,6 +19,8 @@ export function WhatsAppButton() {
     })),
   )
   const footerWhatsapp = useAppearanceStore((state) => state.footerWhatsapp)
+  const getContactForCity = useCitiesStore((state) => state.getContactForCity)
+  const getCityBySlug = useCitiesStore((state) => state.getCityBySlug)
 
   useEffect(() => {
     setMounted(true)
@@ -25,23 +30,41 @@ export function WhatsAppButton() {
     return null
   }
 
-  const activeContacts = contacts.filter(
-    (contact) => contact.active && contact.number.replace(/\D/g, '').length >= 10,
-  )
+  // Verificar se estamos em uma pagina de cidade
+  const cityMatch = pathname?.match(/^\/cidade\/([^/]+)/)
+  const citySlug = cityMatch ? cityMatch[1] : null
+  const city = citySlug ? getCityBySlug(citySlug) : null
 
   let number: string | null = null
   let label: string | null = null
+  let message = defaultMessage
 
-  if (activeContacts.length > 0) {
-    const windowMs = Math.max(1, rotationIntervalMinutes) * 60 * 1000
-    const index = Math.floor(Date.now() / windowMs) % activeContacts.length
-    const chosen = activeContacts[index]
-    number = chosen.number.replace(/\D/g, '')
-    label = chosen.label
-  } else {
-    const fallback = (footerWhatsapp || '').replace(/\D/g, '')
-    if (fallback.length >= 10) {
-      number = fallback
+  // Se estiver em pagina de cidade, usar contatos da cidade COM rotacao
+  if (city && city.active) {
+    const cityContact = getContactForCity(citySlug!)
+    if (cityContact) {
+      number = cityContact.number.replace(/\D/g, '')
+      label = cityContact.label
+      message = city.defaultMessage || defaultMessage
+    }
+  }
+  
+  // Se nao estiver em cidade ou nao tiver contato de cidade, usar primeiro contato global SEM rotacao
+  if (!number) {
+    const activeContacts = contacts.filter(
+      (contact) => contact.active && contact.number.replace(/\D/g, '').length >= 10,
+    )
+
+    if (activeContacts.length > 0) {
+      // Sem rotacao - sempre usa o primeiro contato ativo
+      const chosen = activeContacts[0]
+      number = chosen.number.replace(/\D/g, '')
+      label = chosen.label
+    } else {
+      const fallback = (footerWhatsapp || '').replace(/\D/g, '')
+      if (fallback.length >= 10) {
+        number = fallback
+      }
     }
   }
 
@@ -50,7 +73,7 @@ export function WhatsAppButton() {
   }
 
   const handleClick = () => {
-    const encodedMessage = encodeURIComponent(defaultMessage || '')
+    const encodedMessage = encodeURIComponent(message || '')
     const whatsappUrl = `https://wa.me/${number}${encodedMessage ? `?text=${encodedMessage}` : ''}`
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
   }
