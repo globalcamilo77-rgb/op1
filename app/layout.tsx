@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { AppearanceProvider } from '@/components/store/appearance-provider'
 import { AnalyticsTracker } from '@/components/store/analytics-tracker'
+import { WhatsAppButton } from '@/components/store/whatsapp-button'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -53,6 +54,7 @@ export default function RootLayout({
         <AppearanceProvider />
         <AnalyticsTracker />
         {children}
+        <WhatsAppButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
