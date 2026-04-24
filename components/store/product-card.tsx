@@ -73,6 +73,12 @@ export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps)
           <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
             {product.name}
           </h3>
+          {product.brand && (
+            <p className="text-xs text-[var(--orange-primary)] font-medium mt-0.5">{product.brand}</p>
+          )}
+          {product.dimensions && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">{product.dimensions}</p>
+          )}
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
             <Star size={12} className="text-[var(--orange-primary)] fill-[var(--orange-primary)]" />
             <span>4.8</span>

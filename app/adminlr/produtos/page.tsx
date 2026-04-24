@@ -25,6 +25,8 @@ type EditingProduct = Omit<StoreProduct, 'id'> & { id?: string }
 const EMPTY_FORM: EditingProduct = {
   name: '',
   category: '',
+  brand: '',
+  dimensions: '',
   price: 0,
   stock: 0,
   description: '',
@@ -123,6 +125,8 @@ export default function AdminProdutosPage() {
     const payload = {
       name: editing.name.trim(),
       category: editing.category.trim(),
+      brand: editing.brand?.trim() || '',
+      dimensions: editing.dimensions?.trim() || '',
       price: Number(editing.price) || 0,
       stock: Number(editing.stock) || 0,
       description: editing.description?.trim() || '',
@@ -396,6 +400,24 @@ export default function AdminProdutosPage() {
                 <input
                   value={editing.category}
                   onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+                  className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Marca</label>
+                <input
+                  value={editing.brand || ''}
+                  onChange={(e) => setEditing({ ...editing, brand: e.target.value })}
+                  placeholder="Ex: Votoran, Tigre, Gerdau..."
+                  className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-sm font-medium text-foreground">Medidas / Dimensoes</label>
+                <input
+                  value={editing.dimensions || ''}
+                  onChange={(e) => setEditing({ ...editing, dimensions: e.target.value })}
+                  placeholder="Ex: 50kg - Saco 40x60cm, 10mm x 12m..."
                   className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
                 />
               </div>
