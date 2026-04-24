@@ -128,7 +128,7 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
   { id: 'p-ele-8', name: 'Fechadura Digital Biométrica', category: 'Materiais Elétricos', subcategory: 'Controladores de Acesso', brand: 'Yale', dimensions: 'Para portas 35-55mm - 4 pilhas AA', description: 'Fechadura eletrônica com leitor biométrico e senha. Armazena até 100 digitais. Acabamento cromado escovado.', price: 489.0, stock: 25, active: true, image: '/products/cadeado.jpg' },
   { id: 'p-ele-9', name: 'Eletroduto Corrugado 25mm 50m', category: 'Materiais Elétricos', subcategory: 'Tubos e Eletrodutos', brand: 'Tigre', dimensions: '25mm diâmetro x 50m - Flexível', description: 'Eletroduto corrugado flexível em PVC. Para embutir em lajes e paredes. Antichama e resistente a impactos.', price: 95.0, stock: 90, active: true, image: '/products/tubo-pvc.jpg' },
 
-  // ─── Lonas ───────────────────────────────────────────────
+  // ─── Lonas ──────���────────────────────────────────────────
   { id: 'p-lon-1', name: 'Lona Plástica Preta 4x100m', category: 'Lonas', brand: 'Lonax', dimensions: '4m largura x 100m comprimento - 100 micras', description: 'Lona plástica preta para contrapiso e proteção. Evita subida de umidade. Ideal para hortas e coberturas provisórias.', price: 320.0, stock: 50, active: true, image: '/products/lona-plastica.jpg' },
   { id: 'p-lon-2', name: 'Lona Polietileno 6x10m', category: 'Lonas', brand: 'Lona Forte', dimensions: '6x10m - 150 micras - Azul/Amarela', description: 'Lona reforçada com ilhoses nas bordas. Proteção contra sol e chuva. Para coberturas de obras e materiais.', price: 145.0, stock: 80, active: true, image: '/products/lona-plastica.jpg' },
 
@@ -183,44 +183,128 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
 
 export const useProductsStore = create<ProductsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       products: INITIAL_PRODUCTS,
+      isLoading: false,
+      lastSynced: null as string | null,
 
-      addProduct: (product) =>
+      // Carregar produtos do Supabase
+      loadFromSupabase: async () => {
+        set({ isLoading: true })
+        try {
+          const res = await fetch('/api/products')
+          const data = await res.json()
+          if (data.products && data.products.length > 0) {
+            set({ 
+              products: data.products.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                category: p.category,
+                subcategory: p.subcategory || undefined,
+                brand: p.brand || undefined,
+                dimensions: p.dimensions || undefined,
+                price: Number(p.price) || 0,
+                stock: p.stock || 0,
+                description: p.description || undefined,
+                image: p.image || undefined,
+                active: p.active !== false,
+              })),
+              lastSynced: new Date().toISOString(),
+            })
+          }
+        } catch (error) {
+          console.error('Erro ao carregar produtos do Supabase:', error)
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+
+      // Salvar todos os produtos no Supabase
+      saveToSupabase: async () => {
+        const { products } = get()
+        try {
+          const res = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products }),
+          })
+          const data = await res.json()
+          if (data.success) {
+            set({ lastSynced: new Date().toISOString() })
+          }
+          return data
+        } catch (error) {
+          console.error('Erro ao salvar produtos no Supabase:', error)
+          return { error: 'Falha ao salvar' }
+        }
+      },
+
+      addProduct: (product) => {
+        const newProduct = {
+          ...product,
+          id: `p-${Date.now()}`,
+        }
         set((state) => ({
-          products: [
-            ...state.products,
-            {
-              ...product,
-              id: `p-${Date.now()}`,
-            },
-          ],
-        })),
+          products: [...state.products, newProduct],
+        }))
+        // Salvar automaticamente no Supabase
+        fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: [newProduct] }),
+        }).catch(console.error)
+      },
 
-      updateProduct: (id, updates) =>
+      updateProduct: (id, updates) => {
         set((state) => ({
           products: state.products.map((product) =>
             product.id === id ? { ...product, ...updates } : product,
           ),
-        })),
+        }))
+        // Atualizar automaticamente no Supabase
+        const product = get().products.find((p) => p.id === id)
+        if (product) {
+          fetch('/api/products', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...product, ...updates }),
+          }).catch(console.error)
+        }
+      },
 
-      removeProduct: (id) =>
+      removeProduct: (id) => {
         set((state) => ({
           products: state.products.filter((product) => product.id !== id),
-        })),
+        }))
+        // Deletar do Supabase
+        fetch(`/api/products?id=${id}`, {
+          method: 'DELETE',
+        }).catch(console.error)
+      },
 
-      toggleActive: (id) =>
-        set((state) => ({
-          products: state.products.map((product) =>
-            product.id === id ? { ...product, active: !product.active } : product,
-          ),
-        })),
+      toggleActive: (id) => {
+        const product = get().products.find((p) => p.id === id)
+        if (product) {
+          const newActive = !product.active
+          set((state) => ({
+            products: state.products.map((p) =>
+              p.id === id ? { ...p, active: newActive } : p,
+            ),
+          }))
+          // Atualizar no Supabase
+          fetch('/api/products', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, active: newActive }),
+          }).catch(console.error)
+        }
+      },
 
       resetToSeed: () => set({ products: INITIAL_PRODUCTS }),
     }),
     {
       name: 'alfaconstrucao-products',
-      version: 5,
+      version: 6,
     },
   ),
 )

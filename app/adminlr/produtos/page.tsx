@@ -41,7 +41,7 @@ function currency(value: number) {
 }
 
 export default function AdminProdutosPage() {
-  const { products, addProduct, updateProduct, removeProduct, toggleActive } = useProductsStore()
+  const { products, addProduct, updateProduct, removeProduct, toggleActive, loadFromSupabase, saveToSupabase } = useProductsStore()
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<EditingProduct>(EMPTY_FORM)
@@ -100,9 +100,9 @@ export default function AdminProdutosPage() {
     try {
       setSyncing('pull')
       setSyncMessage(null)
-      const remote = await listRemoteProducts()
-      useProductsStore.setState({ products: remote })
-      setSyncMessage(`Baixados ${remote.length} produtos do Supabase.`)
+      await loadFromSupabase()
+      const state = useProductsStore.getState()
+      setSyncMessage(`Baixados ${state.products.length} produtos do Supabase.`)
     } catch (error) {
       console.error(error)
       setSyncMessage(`Falha ao baixar: ${formatSupabaseError(error)}`)
@@ -115,8 +115,12 @@ export default function AdminProdutosPage() {
     try {
       setSyncing('push')
       setSyncMessage(null)
-      await upsertRemoteProducts(products)
-      setSyncMessage(`Enviados ${products.length} produtos para o Supabase.`)
+      const result = await saveToSupabase()
+      if (result?.error) {
+        setSyncMessage(`Falha ao enviar: ${result.error}`)
+      } else {
+        setSyncMessage(`Enviados ${products.length} produtos para o Supabase.`)
+      }
     } catch (error) {
       console.error(error)
       setSyncMessage(`Falha ao enviar: ${formatSupabaseError(error)}`)
