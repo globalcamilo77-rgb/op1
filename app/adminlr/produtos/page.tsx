@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useMemo, useState, useRef } from 'react'
+import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import {
   Plus,
   Pencil,
@@ -51,6 +51,11 @@ export default function AdminProdutosPage() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabaseReady = isSupabaseConfigured()
+
+  // Carregar produtos do Supabase ao montar
+  useEffect(() => {
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   async function handleImageUpload(file: File) {
     setUploading(true)

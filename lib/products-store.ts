@@ -128,7 +128,7 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
   { id: 'p-ele-8', name: 'Fechadura Digital Biométrica', category: 'Materiais Elétricos', subcategory: 'Controladores de Acesso', brand: 'Yale', dimensions: 'Para portas 35-55mm - 4 pilhas AA', description: 'Fechadura eletrônica com leitor biométrico e senha. Armazena até 100 digitais. Acabamento cromado escovado.', price: 489.0, stock: 25, active: true, image: '/products/cadeado.jpg' },
   { id: 'p-ele-9', name: 'Eletroduto Corrugado 25mm 50m', category: 'Materiais Elétricos', subcategory: 'Tubos e Eletrodutos', brand: 'Tigre', dimensions: '25mm diâmetro x 50m - Flexível', description: 'Eletroduto corrugado flexível em PVC. Para embutir em lajes e paredes. Antichama e resistente a impactos.', price: 95.0, stock: 90, active: true, image: '/products/tubo-pvc.jpg' },
 
-  // ─── Lonas ──────���────────────────────────────────────────
+  // ─── Lonas ──────�����────────────────────────────────────────
   { id: 'p-lon-1', name: 'Lona Plástica Preta 4x100m', category: 'Lonas', brand: 'Lonax', dimensions: '4m largura x 100m comprimento - 100 micras', description: 'Lona plástica preta para contrapiso e proteção. Evita subida de umidade. Ideal para hortas e coberturas provisórias.', price: 320.0, stock: 50, active: true, image: '/products/lona-plastica.jpg' },
   { id: 'p-lon-2', name: 'Lona Polietileno 6x10m', category: 'Lonas', brand: 'Lona Forte', dimensions: '6x10m - 150 micras - Azul/Amarela', description: 'Lona reforçada com ilhoses nas bordas. Proteção contra sol e chuva. Para coberturas de obras e materiais.', price: 145.0, stock: 80, active: true, image: '/products/lona-plastica.jpg' },
 
@@ -156,7 +156,7 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
   { id: 'p-fra-8', name: 'Nível de Bolha 60cm', category: 'Ferramentas', subcategory: 'Ferramentas Manuais', brand: 'Stanley', dimensions: '60cm comprimento - 3 bolhas', description: 'Nível de alumínio com 3 bolhas (horizontal, vertical e 45°). Base magnética. Precisão de 0,5mm/m.', price: 45.0, stock: 140, active: true, image: '/products/martelo.jpg' },
 
   // ─── Louças e Metais ─────────────────────────────────────
-  { id: 'p-lou-1', name: 'Sifão Sanfonado Universal', category: 'Louças e Metais', subcategory: 'Acessórios', brand: 'Astra', dimensions: '1.1/2" x 1.1/4" - Extensível 40-80cm', description: 'Sifão flexível universal em polipropileno. Conexão para lavatório e tanque. Extensível e fácil instalação.', price: 14.5, stock: 300, active: true, image: '/products/tubo-pvc.jpg' },
+  { id: 'p-lou-1', name: 'Sifão Sanfonado Universal', category: 'Louças e Metais', subcategory: 'Acessórios', brand: 'Astra', dimensions: '1.1/2" x 1.1/4" - Extensível 40-80cm', description: 'Sifão flexível universal em polipropileno. Conexão para lavatório e tanque. Extensível e f��cil instalação.', price: 14.5, stock: 300, active: true, image: '/products/tubo-pvc.jpg' },
   { id: 'p-lou-2', name: 'Chuveiro Eletrônico 220V', category: 'Louças e Metais', subcategory: 'Chuveiros', brand: 'Lorenzetti', dimensions: '220V - 7500W - 4 temperaturas', description: 'Chuveiro elétrico com controle eletrônico de temperatura. Resistência blindada. Design moderno cromado.', price: 120.0, stock: 90, active: true, image: '/products/chuveiro.jpg' },
   { id: 'p-lou-3', name: 'Vaso Sanitário Branco', category: 'Louças e Metais', subcategory: 'Louças', brand: 'Deca', dimensions: 'Convencional - 38x52x39cm - 6L descarga', description: 'Vaso sanitário de louça com caixa acoplada. Sistema dual flush 3/6L. Fixação ao piso inclusa.', price: 180.0, stock: 70, active: true, image: '/products/vaso-sanitario.jpg' },
   { id: 'p-lou-4', name: 'Torneira Cozinha Bica Alta', category: 'Louças e Metais', subcategory: 'Torneiras', brand: 'Docol', dimensions: 'Bica 24cm - Bancada - Cromada', description: 'Torneira de cozinha com bica alta móvel. Acabamento cromado. Arejador antivandalismo. Fácil limpeza.', price: 95.0, stock: 110, active: true, image: '/products/torneira.jpg' },
@@ -304,7 +304,11 @@ export const useProductsStore = create<ProductsState>()(
     }),
     {
       name: 'alfaconstrucao-products',
-      version: 6,
+      version: 7,
+      // Quando a versão muda, limpa os produtos antigos do localStorage
+      migrate: (persistedState: unknown) => {
+        return { products: [], isLoading: false, lastSynced: null }
+      },
     },
   ),
 )
