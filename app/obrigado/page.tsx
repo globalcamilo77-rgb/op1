@@ -1,15 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, Package, Truck, Clock, ArrowRight, Home } from 'lucide-react'
+import { CheckCircle2, Package, Truck, Clock, Home, Loader2 } from 'lucide-react'
 import { StoreHeader } from '@/components/store/header'
-import { StoreFooter } from '@/components/store/footer'
+import { Footer } from '@/components/store/footer'
 
-export default function ObrigadoPage() {
+function ObrigadoContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const orderId = searchParams.get('pedido')
   const [mounted, setMounted] = useState(false)
 
@@ -18,7 +17,11 @@ export default function ObrigadoPage() {
   }, [])
 
   if (!mounted) {
-    return null
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--orange-primary)]" size={32} />
+      </div>
+    )
   }
 
   return (
@@ -116,7 +119,23 @@ export default function ObrigadoPage() {
         </div>
       </main>
 
-      <StoreFooter />
+      <Footer />
     </div>
+  )
+}
+
+export default function ObrigadoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-background">
+        <StoreHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="animate-spin text-[var(--orange-primary)]" size={32} />
+        </div>
+        <Footer />
+      </div>
+    }>
+      <ObrigadoContent />
+    </Suspense>
   )
 }
