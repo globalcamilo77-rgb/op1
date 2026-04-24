@@ -62,9 +62,22 @@ export function PixPayment({
   const [gatewayCharge, setGatewayCharge] = useState<GatewayChargeNormalized | null>(null)
   const [gatewayLoading, setGatewayLoading] = useState(false)
   const [gatewayError, setGatewayError] = useState<string>('')
+  const [serverHasKey, setServerHasKey] = useState<boolean | null>(null)
   const gatewayFiredRef = useRef<string>('')
 
   const txid = useMemo(() => generateTxid(orderId ? 'OB' : 'PX'), [orderId])
+
+  // Verificar se o servidor tem a chave da API configurada
+  useEffect(() => {
+    fetch('/api/pix/config')
+      .then((res) => res.json())
+      .then((data) => {
+        setServerHasKey(data.hasServerKey === true)
+      })
+      .catch(() => {
+        setServerHasKey(false)
+      })
+  }, [])
 
   // Polling para verificar status do pagamento
   useEffect(() => {
@@ -117,10 +130,11 @@ export function PixPayment({
     return () => clearInterval(interval)
   }, [gatewayCharge?.id, paymentConfirmed, orderId, txid, amount, customerName, customerEmail, customerPhone, customerDocument, router])
 
+  // Usar gateway se tem chave local OU se o servidor tem a chave configurada
   const shouldUseGateway =
     pix.gatewayEnabled &&
     pix.gatewayProvider !== 'none' &&
-    (pix.gatewayApiKey.trim() !== '' || pix.gatewayHasServerKey)
+    (pix.gatewayApiKey.trim() !== '' || serverHasKey === true)
 
   useEffect(() => {
     if (!shouldUseGateway || amount <= 0) return
@@ -272,6 +286,16 @@ export function PixPayment({
     return (
       <div className="rounded-lg border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
         Pagamento via PIX indisponivel no momento.
+      </div>
+    )
+  }
+
+  // Aguardar verificação do servidor
+  if (serverHasKey === null) {
+    return (
+      <div className="rounded-lg border border-border bg-secondary/40 p-4 text-sm text-muted-foreground flex items-center gap-2">
+        <Loader2 size={16} className="animate-spin" />
+        Carregando configuracao de pagamento...
       </div>
     )
   }
