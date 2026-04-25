@@ -28,6 +28,25 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
   const trackingObj =
     order.tracking && typeof order.tracking === 'object' ? order.tracking : {}
 
+  // Resumo legivel dos campos que nao tem coluna propria, salvo em notes
+  const notesPayload = JSON.stringify({
+    address_raw: order.addressRaw ?? null,
+    city: order.city ?? null,
+    postal_code: order.postalCode ?? null,
+    subtotal: order.subtotal,
+    shipping: order.shipping,
+    discount: order.discount,
+  })
+
+  const itemsPayload = order.items.map((item) => ({
+    product_id: item.productId,
+    name: item.name,
+    category: item.category,
+    unit_price: item.price,
+    quantity: item.quantity,
+    image: item.image ?? null,
+  }))
+
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -35,15 +54,11 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
       customer_email: order.customerEmail ?? null,
       customer_phone: order.customerPhone ?? null,
       customer_document: order.customerDocument ?? null,
-      address_raw: order.addressRaw ?? null,
-      city: order.city ?? null,
-      postal_code: order.postalCode ?? null,
-      subtotal: order.subtotal,
-      shipping: order.shipping,
-      discount: order.discount,
       total: order.total,
       payment_method: order.paymentMethod ?? null,
       status: order.status ?? 'pending',
+      items: itemsPayload,
+      notes: notesPayload,
       tracking: trackingObj,
       attendant_name: order.attendantName ?? null,
     })
@@ -55,23 +70,5 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
     return null
   }
 
-  const orderId = data?.id as string
-  if (!orderId || order.items.length === 0) return orderId
-
-  const itemsPayload = order.items.map((item) => ({
-    order_id: orderId,
-    product_id: item.productId,
-    name: item.name,
-    category: item.category,
-    unit_price: item.price,
-    quantity: item.quantity,
-    image: item.image ?? null,
-  }))
-
-  const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload)
-  if (itemsError) {
-    console.warn('order_items push failed:', itemsError.message)
-  }
-
-  return orderId
+  return (data?.id as string) ?? null
 }
