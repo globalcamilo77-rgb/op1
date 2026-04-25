@@ -22,6 +22,7 @@ import {
   MapPin,
   Wallet,
   Plug,
+  Filter,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -42,6 +43,7 @@ const superAdminLinks = [
   { href: '/adminlr/imagens', label: 'Imagens IA', icon: Images },
   { href: '/adminlr/marketing', label: 'Marketing', icon: TrendingUp },
   { href: '/adminlr/cidades', label: 'Cidades (LPs)', icon: MapPin },
+  { href: '/adminlr/funis', label: 'Funis', icon: Filter },
   { href: '/adminlr/whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { href: '/adminlr/pagamentos', label: 'Pagamentos', icon: Wallet },
   { href: '/adminlr/pix', label: 'PIX', icon: QrCode },
