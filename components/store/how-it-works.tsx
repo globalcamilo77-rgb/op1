@@ -46,7 +46,7 @@ export function HowItWorks() {
 
       <div className="text-center">
         <Link
-          href="/produtos"
+          href="/loja"
           className="bg-[var(--orange-primary)] text-white px-8 py-3 rounded font-bold text-sm inline-block hover:bg-[var(--orange-dark)] transition-colors"
         >
           VER PRODUTOS

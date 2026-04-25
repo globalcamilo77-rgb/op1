@@ -46,7 +46,7 @@ export function HeroSection() {
 
             <div className="flex flex-wrap gap-3 mt-8">
               <Link
-                href="/produtos"
+                href="/loja"
                 className="inline-flex items-center gap-2 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white px-7 py-3.5 rounded-lg font-bold text-sm shadow-lg shadow-[var(--orange-primary)]/30 transition-all hover:shadow-xl hover:shadow-[var(--orange-primary)]/40 hover:-translate-y-0.5"
               >
                 Ver Produtos Agora
