@@ -85,6 +85,6 @@ export const faqItems = [
   },
   {
     question: 'Quais são os meios de pagamentos disponíveis?',
-    answer: 'Você pode pagar direto na plataforma utilizando cartão de crédito, ou pagar na entrega via PIX, cartão de crédito ou débito diretamente para o lojista responsável.',
+    answer: 'Atualmente trabalhamos exclusivamente com PIX. Pagando via PIX você ganha 5% de desconto à vista, aplicado automaticamente no checkout.',
   },
 ]
