@@ -105,9 +105,6 @@ export function FeaturedProducts() {
                     <h3 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
                       {group.categoryName}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {group.total} {group.total === 1 ? 'produto disponível' : 'produtos disponíveis'}
-                    </p>
                   </div>
                 </div>
 

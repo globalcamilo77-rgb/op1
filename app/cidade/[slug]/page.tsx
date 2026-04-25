@@ -435,8 +435,8 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
               Todos os produtos disponiveis
             </h2>
             <p className="text-sm text-muted-foreground mt-2">
-              Mais de {activeProducts.length} produtos com entrega em {safeCity.cityName} e regiao.
-              Pague no Pix com 7% off ou em 12x sem juros.
+              Catalogo com entrega em {safeCity.cityName} e regiao. Pague no Pix com 7% off ou em
+              12x sem juros.
             </p>
           </div>
 
@@ -451,9 +451,6 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
                   <div className="flex items-end justify-between mb-5 pb-3 border-b-2 border-[var(--orange-primary)]/30">
                     <div>
                       <h3 className="text-2xl font-extrabold">{category}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {items.length} {items.length === 1 ? 'produto disponivel' : 'produtos disponiveis'}
-                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
