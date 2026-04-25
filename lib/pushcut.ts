@@ -2,10 +2,10 @@
 // Os 3 endpoints disparam para 3 dispositivos/contas distintas.
 
 // IMPORTANTE: o nome da notification e case-sensitive e deve existir no
-// Pushcut do dispositivo. URL #1 tem nome "Alfa " (com espaco no final, encodado %20).
+// Pushcut do dispositivo correspondente.
 const PUSHCUT_ENDPOINTS = [
   'https://api.pushcut.io/1QF9kMziOF12FeAKJby0B/notifications/Alfa%20',
-  'https://api.pushcut.io/8DnJaf6bHxILOHcg2BIbY/notifications/Alfa',
+  'https://api.pushcut.io/8DnJaf6bHxILOHcg2BIbY/notifications/Gerado',
   'https://api.pushcut.io/G7TVP0BQZvdZeVlNdxBpM/notifications/ALFA',
 ]
 
