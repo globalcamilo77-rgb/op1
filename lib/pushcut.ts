@@ -31,22 +31,10 @@ export async function notifyPixGenerated(data: PixGeneratedPayload): Promise<{
   details: Array<{ url: string; status: number; ok: boolean; error?: string }>
 }> {
   const valueFormatted = formatBRL(data.amount)
-  const titleParts: string[] = [`Pix gerado: ${valueFormatted}`]
-  if (data.customerName) {
-    titleParts.push(data.customerName)
-  }
-  const title = titleParts.join(' - ')
-
-  const textParts: string[] = []
-  if (data.customerPhone) textParts.push(`Tel: ${data.customerPhone}`)
-  if (data.customerDocument) textParts.push(`Doc: ${data.customerDocument}`)
-  if (data.externalReference) textParts.push(`Ref: ${data.externalReference}`)
-  if (data.paymentId) textParts.push(`Id: ${data.paymentId}`)
-  const text = textParts.length > 0 ? textParts.join(' | ') : 'Novo Pix gerado no checkout'
 
   const body = {
-    title,
-    text,
+    title: 'Pix Gerado',
+    text: valueFormatted,
     input: valueFormatted,
   }
 
