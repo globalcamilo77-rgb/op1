@@ -99,9 +99,9 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   const [submitted, setSubmitted] = useState(false)
   const [deadline] = useState(() => Date.now() + 6 * 60 * 60 * 1000)
 
-  const featured = useMemo(() => {
+  const activeProducts = useMemo(() => {
     if (!mounted) return []
-    return products.filter((p) => p.active).slice(0, 6)
+    return products.filter((p) => p.active)
   }, [mounted, products])
 
   const categories = useMemo(() => {
@@ -112,6 +112,16 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
     })
     return Array.from(set).slice(0, 6)
   }, [mounted, products])
+
+  const productsByCategory = useMemo(() => {
+    const groups = new Map<string, typeof activeProducts>()
+    activeProducts.forEach((product) => {
+      const cat = product.category || 'Outros'
+      if (!groups.has(cat)) groups.set(cat, [])
+      groups.get(cat)!.push(product)
+    })
+    return Array.from(groups.entries()).map(([category, items]) => ({ category, items }))
+  }, [activeProducts])
 
   useEffect(() => {
     if (!mounted || !city) return
@@ -419,76 +429,84 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto">
             <p className="text-xs uppercase tracking-widest text-[var(--orange-primary)] font-bold">
-              Mais vendidos em {safeCity.cityName}
+              Catalogo completo em {safeCity.cityName}
             </p>
-            <h2 className="text-3xl font-extrabold mt-2">Ofertas que saem hoje</h2>
+            <h2 className="text-3xl font-extrabold mt-2">
+              Todos os produtos disponiveis
+            </h2>
             <p className="text-sm text-muted-foreground mt-2">
-              Selecionamos os produtos com maior giro e melhores precos para sua obra.
+              Mais de {activeProducts.length} produtos com entrega em {safeCity.cityName} e regiao.
+              Pague no Pix com 7% off ou em 12x sem juros.
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.length === 0 && (
-              <div className="md:col-span-2 lg:col-span-3 text-center text-sm text-muted-foreground py-10 bg-card rounded-lg">
-                Cadastre produtos ativos no admin para que aparecam aqui automaticamente.
-              </div>
-            )}
-            {featured.map((product) => (
-              <div
-                key={product.id}
-                className="group bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col"
-              >
-                <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
-                  {product.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                      Sem imagem
+          {activeProducts.length === 0 ? (
+            <div className="mt-8 text-center text-sm text-muted-foreground py-10 bg-card rounded-lg">
+              Cadastre produtos ativos no admin para que aparecam aqui automaticamente.
+            </div>
+          ) : (
+            <div className="mt-10 space-y-12">
+              {productsByCategory.map(({ category, items }) => (
+                <div key={category}>
+                  <div className="flex items-end justify-between mb-5 pb-3 border-b-2 border-[var(--orange-primary)]/30">
+                    <div>
+                      <h3 className="text-2xl font-extrabold">{category}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {items.length} {items.length === 1 ? 'produto disponivel' : 'produtos disponiveis'}
+                      </p>
                     </div>
-                  )}
-                  <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wide bg-[var(--orange-primary)] text-white px-2 py-1 rounded">
-                    Oferta
-                  </span>
-                </div>
-                <div className="p-4 flex-1 flex flex-col gap-3">
-                  <h3 className="text-base font-semibold leading-snug line-clamp-2">{product.name}</h3>
-                  <div>
-                    <p className="text-xs text-muted-foreground line-through">
-                      De {currency(product.price * 1.22)}
-                    </p>
-                    <p className="text-2xl font-extrabold text-[var(--orange-dark)]">
-                      por {currency(product.price)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ou 12x de {currency(product.price / 12)} sem juros
-                    </p>
                   </div>
-                  <button
-                    onClick={() => handleAddAndCheckout(product.id)}
-                    className="mt-auto inline-flex items-center justify-center gap-2 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white font-bold py-2.5 rounded-md text-sm transition-colors"
-                  >
-                    <ShoppingCart size={16} />
-                    Comprar agora
-                  </button>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    {items.map((product) => (
+                      <div
+                        key={product.id}
+                        className="group bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col"
+                      >
+                        <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
+                          {product.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={product.image || '/placeholder.svg'}
+                              alt={product.name}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                              Sem imagem
+                            </div>
+                          )}
+                          <span className="absolute top-2 left-2 text-[9px] uppercase tracking-wide bg-[var(--orange-primary)] text-white px-2 py-0.5 rounded">
+                            Oferta
+                          </span>
+                        </div>
+                        <div className="p-3 md:p-4 flex-1 flex flex-col gap-2 md:gap-3">
+                          <h4 className="text-sm md:text-base font-semibold leading-snug line-clamp-2 min-h-[2.5rem]">
+                            {product.name}
+                          </h4>
+                          <div>
+                            <p className="text-[11px] text-muted-foreground line-through">
+                              De {currency(product.price * 1.22)}
+                            </p>
+                            <p className="text-lg md:text-xl font-extrabold text-[var(--orange-dark)]">
+                              {currency(product.price)}
+                            </p>
+                            <p className="text-[10px] md:text-[11px] text-muted-foreground mt-0.5">
+                              12x de {currency(product.price / 12)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleAddAndCheckout(product.id)}
+                            className="mt-auto inline-flex items-center justify-center gap-1.5 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white font-bold py-2 rounded-md text-xs md:text-sm transition-colors"
+                          >
+                            <ShoppingCart size={14} />
+                            Comprar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {featured.length > 0 && (
-            <div className="mt-8 text-center">
-              <a
-                href="/loja"
-                className="inline-flex items-center gap-2 border-2 border-[var(--orange-primary)] text-[var(--orange-primary)] hover:bg-[var(--orange-primary)] hover:text-white px-5 py-2.5 rounded-full font-bold text-sm transition-colors"
-              >
-                Ver catalogo completo
-                <ArrowRight size={16} />
-              </a>
+              ))}
             </div>
           )}
         </div>
