@@ -69,15 +69,15 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   const { slug } = use(params)
   const router = useRouter()
 
+  const { products, loadFromSupabase } = useProductsStore()
+  const { addItem } = useCartStore()
+  const trackEvent = useAnalyticsStore((state) => state.trackEvent)
+
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
     loadFromSupabase()
   }, [loadFromSupabase])
-
-  const { products, loadFromSupabase } = useProductsStore()
-  const { addItem } = useCartStore()
-  const trackEvent = useAnalyticsStore((state) => state.trackEvent)
 
   const city = useCitiesStore((state) => state.cities.find((c) => c.slug === slug))
   const getContact = useCitiesStore((state) => state.getContactForCity)
