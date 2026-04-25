@@ -4,7 +4,7 @@ import { MessageCircle, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useShallow } from 'zustand/react/shallow'
-import { useWhatsAppStore, type WhatsAppContact } from '@/lib/whatsapp-store'
+import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
@@ -66,38 +66,57 @@ export function WhatsAppButton() {
     return city && city.active ? city : null
   }, [mounted, pathname, activeCitySlug, getCityBySlug])
 
-  // Lista todos os contatos disponiveis: contatos da cidade ativa + contatos globais ativos.
+  // Lista todos os contatos disponiveis: contatos da cidade ativa (se em /cidade/[slug])
+  // + contatos globais + contatos de todas as outras cidades ativas como opcao secundaria.
   const availableContacts = useMemo<AvailableContact[]>(() => {
     if (!mounted) return []
     const items: AvailableContact[] = []
     const seen = new Set<string>()
 
-    const push = (raw: WhatsAppContact, source: 'city' | 'global') => {
+    const push = (
+      raw: { id?: string; label?: string; number?: string },
+      source: 'city' | 'global',
+      labelOverride?: string,
+    ) => {
       const digits = (raw.number || '').replace(/\D/g, '')
       if (digits.length < 10) return
       if (seen.has(digits)) return
       seen.add(digits)
       items.push({
         id: raw.id || `${source}-${digits}`,
-        label: raw.label || (source === 'city' ? 'Atendimento local' : 'WhatsApp'),
+        label: labelOverride || raw.label || (source === 'city' ? 'Atendimento local' : 'WhatsApp'),
         number: digits,
         source,
       })
     }
 
-    // 1) Contatos da cidade no topo (se houver)
+    // 1) Contatos da cidade ativa primeiro (so quando estamos em /cidade/[slug])
     if (cityFromPath) {
       for (const c of cityFromPath.contacts || []) {
         if (c.active) push(c, 'city')
       }
     }
 
-    // 2) Contatos globais
+    // 2) Contatos globais cadastrados em /adminlr/whatsapp
     for (const c of contacts) {
       if (c.active) push(c, 'global')
     }
 
-    // 3) Fallback: numero do rodape se nada cadastrado
+    // 3) Contatos de TODAS as outras cidades ativas (na home/loja viram a unica fonte)
+    for (const otherCity of cities) {
+      if (!otherCity.active) continue
+      if (cityFromPath && otherCity.slug === cityFromPath.slug) continue
+      for (const c of otherCity.contacts || []) {
+        if (!c.active) continue
+        push(
+          c,
+          'global',
+          `${c.label || 'Atendimento'} - ${otherCity.cityName}`,
+        )
+      }
+    }
+
+    // 4) Fallback final: numero do rodape se realmente nao tem nada
     if (items.length === 0) {
       const fallback = (footerWhatsapp || '').replace(/\D/g, '')
       if (fallback.length >= 10) {
@@ -107,25 +126,6 @@ export function WhatsAppButton() {
           number: fallback,
           source: 'global',
         })
-      }
-    }
-
-    // Em paginas de cidade tambem listamos as outras cidades como opcao secundaria
-    if (cityFromPath) {
-      for (const otherCity of cities) {
-        if (!otherCity.active || otherCity.slug === cityFromPath.slug) continue
-        for (const c of otherCity.contacts || []) {
-          if (!c.active) continue
-          const digits = (c.number || '').replace(/\D/g, '')
-          if (digits.length < 10 || seen.has(digits)) continue
-          seen.add(digits)
-          items.push({
-            id: c.id || `city-${otherCity.slug}-${digits}`,
-            label: `${c.label || 'Atendimento'} - ${otherCity.cityName}`,
-            number: digits,
-            source: 'global',
-          })
-        }
       }
     }
 
