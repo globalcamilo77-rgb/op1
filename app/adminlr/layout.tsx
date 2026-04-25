@@ -15,6 +15,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isAuthenticated, router])
 
+  // Tema escuro aplicado APENAS no painel admin. Adiciona a classe `dark` no <html>
+  // ao montar e remove ao desmontar para que o site publico permaneca claro.
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.add('dark')
+    return () => {
+      root.classList.remove('dark')
+    }
+  }, [])
+
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

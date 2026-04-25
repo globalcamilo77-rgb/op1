@@ -81,10 +81,10 @@ export const faqItems = [
   },
   {
     question: 'Como cancelar uma compra?',
-    answer: 'Caso deseje cancelar uma compra você deverá entrar em contato conosco pelo telefone 0800 333 6272 ou pelo WhatsApp (11) 4572-4545.',
+    answer: 'Caso deseje cancelar uma compra você deverá entrar em contato conosco pelo email contato@alfaconstrucao.com.br.',
   },
   {
     question: 'Quais são os meios de pagamentos disponíveis?',
-    answer: 'Você pode pagar direto na plataforma utilizando cartão de crédito, ou pagar na entrega via PIX, cartão de crédito ou débito diretamente para o lojista responsável.',
+    answer: 'Atualmente trabalhamos exclusivamente com PIX. Pagando via PIX você ganha 5% de desconto à vista, aplicado automaticamente no checkout.',
   },
 ]

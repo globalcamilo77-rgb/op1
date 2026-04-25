@@ -13,11 +13,17 @@ import { useTrackingParamsStore } from '@/lib/tracking-params-store'
 export function WhatsAppButton() {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
-  const { contacts, defaultMessage, rotationIntervalMinutes } = useWhatsAppStore(
+  const {
+    contacts,
+    defaultMessage,
+    getContactForCurrentClickBlock,
+    registerClickAndGetContact,
+  } = useWhatsAppStore(
     useShallow((state) => ({
       contacts: state.contacts,
       defaultMessage: state.defaultMessage,
-      rotationIntervalMinutes: state.rotationIntervalMinutes,
+      getContactForCurrentClickBlock: state.getContactForCurrentClickBlock,
+      registerClickAndGetContact: state.registerClickAndGetContact,
     })),
   )
   const footerWhatsapp = useAppearanceStore((state) => state.footerWhatsapp)
@@ -43,8 +49,9 @@ export function WhatsAppButton() {
   let number: string | null = null
   let label: string | null = null
   let message = defaultMessage
+  // Quando estiver em uma pagina de cidade, ignoramos a rotacao por cliques (atendente fixo).
+  let useClickRotation = false
 
-  // Se estiver em pagina de cidade, usar contatos da cidade COM rotacao
   if (city && city.active) {
     const cityContact = getContactForCity(citySlug!)
     if (cityContact) {
@@ -53,18 +60,14 @@ export function WhatsAppButton() {
       message = city.defaultMessage || defaultMessage
     }
   }
-  
-  // Se nao estiver em cidade ou nao tiver contato de cidade, usar primeiro contato global SEM rotacao
-  if (!number) {
-    const activeContacts = contacts.filter(
-      (contact) => contact.active && contact.number.replace(/\D/g, '').length >= 10,
-    )
 
-    if (activeContacts.length > 0) {
-      // Sem rotacao - sempre usa o primeiro contato ativo
-      const chosen = activeContacts[0]
-      number = chosen.number.replace(/\D/g, '')
-      label = chosen.label
+  // Fora de paginas de cidade: rotacao por blocos de cliques (default 10 cliques por contato)
+  if (!number) {
+    const blockContact = getContactForCurrentClickBlock()
+    if (blockContact) {
+      number = blockContact.number.replace(/\D/g, '')
+      label = blockContact.label
+      useClickRotation = true
     } else {
       const fallback = (footerWhatsapp || '').replace(/\D/g, '')
       if (fallback.length >= 10) {
@@ -78,6 +81,18 @@ export function WhatsAppButton() {
   }
 
   const handleClick = () => {
+    // Se estamos em modo rotacao por cliques, registramos o clique e usamos o contato resultante
+    // (que pode ja ser o proximo da fila se o clique fechou o bloco atual).
+    let targetNumber = number!
+    let targetLabel = label
+    if (useClickRotation) {
+      const next = registerClickAndGetContact()
+      if (next) {
+        targetNumber = next.number.replace(/\D/g, '')
+        targetLabel = next.label
+      }
+    }
+
     let finalMessage = message || ''
 
     // Anexa origem da campanha ao final da mensagem para o atendente saber a origem do lead
@@ -87,10 +102,14 @@ export function WhatsAppButton() {
       finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
     }
 
+    void targetLabel // evita warning de variavel nao usada
     const encodedMessage = encodeURIComponent(finalMessage)
-    const whatsappUrl = `https://wa.me/${number}${encodedMessage ? `?text=${encodedMessage}` : ''}`
+    const whatsappUrl = `https://wa.me/${targetNumber}${encodedMessage ? `?text=${encodedMessage}` : ''}`
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
   }
+
+  // contacts referenciado para garantir reatividade
+  void contacts
 
   return (
     <button

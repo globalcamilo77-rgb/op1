@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Facebook, Instagram, Mail, MessageCircle, Phone } from 'lucide-react'
+import { Mail, MessageCircle, Phone } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_APPEARANCE, useAppearanceStore } from '@/lib/appearance-store'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
@@ -151,7 +151,7 @@ export function Footer() {
             <p className="text-sm text-white/80 mb-3 leading-relaxed">
               <strong>Horario de atendimento</strong>
               <br />
-              Segunda a sexta: 08:00 as 17:30
+              Todos os dias: 08:00 as 22:00
             </p>
             {phoneHref && (
               <p className="text-sm text-white/80 leading-relaxed flex items-center gap-2">
@@ -196,29 +196,9 @@ export function Footer() {
         </div>
 
         <div className="border-t border-white/20 pt-6 text-center">
-          <p className="text-xs text-white/60 mb-4 leading-relaxed whitespace-pre-line">
+          <p className="text-xs text-white/60 leading-relaxed whitespace-pre-line">
             {copyrightText}
           </p>
-          <div className="flex justify-center gap-4">
-            <a
-              href="https://facebook.com/alfaconstrucao"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white/60 hover:text-white transition-colors"
-              aria-label="Facebook"
-            >
-              <Facebook size={20} />
-            </a>
-            <a
-              href="https://instagram.com/alfaconstrucao"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white/60 hover:text-white transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram size={20} />
-            </a>
-          </div>
         </div>
       </div>
     </footer>
