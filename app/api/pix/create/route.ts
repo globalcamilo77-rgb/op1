@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { notifyPixGenerated } from '@/lib/pushcut'
 
 const KOLISEU_API_URL = 'https://www.koliseu.cloud/api/v1/pix/payments'
 
@@ -54,6 +55,17 @@ export async function POST(request: NextRequest) {
         { status: response.status }
       )
     }
+
+    // Disparar notificacao Pushcut em paralelo para os 3 dispositivos
+    const notifyResult = await notifyPixGenerated({
+      amount: Number(amountCents) / 100,
+      customerName: client?.name,
+      customerPhone: client?.phone,
+      customerDocument: client?.document,
+      externalReference: payload.externalReference,
+      paymentId: data?.id,
+    })
+    console.log('[v0] Pushcut Pix gerado:', notifyResult)
 
     return NextResponse.json(data)
   } catch (error) {

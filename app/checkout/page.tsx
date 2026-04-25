@@ -27,6 +27,7 @@ import { useAnalyticsStore } from '@/lib/analytics-store'
 import { useAddressStore } from '@/lib/address-store'
 import { createOrder } from '@/lib/supabase-orders'
 import { usePixStore } from '@/lib/pix-store'
+import { useTrackingParamsStore } from '@/lib/tracking-params-store'
 import {
   usePaymentMethodsStore,
   type PaymentMethodId,
@@ -51,6 +52,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items, clear } = useCartStore()
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
+  const trackingParams = useTrackingParamsStore((state) => state.params)
   const address = useAddressStore((state) => state.address)
 
   const pixConfig = usePixStore(
@@ -82,6 +84,7 @@ export default function CheckoutPage() {
   const [buyerEmail, setBuyerEmail] = useState('')
   const [buyerDocument, setBuyerDocument] = useState('')
   const [confirmed, setConfirmed] = useState(false)
+  const [dbOrderId, setDbOrderId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [gatewayCharge, setGatewayCharge] = useState<GatewayChargeNormalized | null>(null)
 
@@ -164,7 +167,8 @@ export default function CheckoutPage() {
     }
     setFormError(null)
 
-    trackEvent('purchase', {
+    // Begin checkout: pode disparar antes do pagamento (NAO confunde com purchase)
+    trackEvent('begin_checkout', {
       value: total,
       meta: {
         items: visibleItems.length,
@@ -203,7 +207,11 @@ export default function CheckoutPage() {
       })
     }
 
-    void createOrder({
+    const newOrderId = await createOrder({
+      customerName: buyerName || undefined,
+      customerEmail: buyerEmail || undefined,
+      customerPhone: buyerPhone || undefined,
+      customerDocument: buyerDocument || undefined,
       addressRaw: address?.rawInput,
       city: address?.city,
       postalCode: address?.postalCode,
@@ -214,15 +222,23 @@ export default function CheckoutPage() {
       paymentMethod,
       status: paymentMethod === 'pix' ? 'awaiting_payment' : 'pending',
       items: visibleItems,
+      tracking: trackingParams,
     })
+    setDbOrderId(newOrderId)
 
     if (paymentMethod === 'pix') {
+      // Mantem o usuario na tela do PIX. O purchase so dispara quando ele
+      // chega em /obrigado e o pedido tem paid_at preenchido pelo webhook do gateway.
       setConfirmed(true)
       return
     }
 
     clear()
-    router.push('/?obrigado=1')
+    if (newOrderId) {
+      router.push(`/obrigado?pedido=${newOrderId}`)
+    } else {
+      router.push('/obrigado')
+    }
   }
 
   const showCardForm = paymentMethod === 'credit'
@@ -319,10 +335,10 @@ export default function CheckoutPage() {
                     variant="outline"
                     onClick={() => {
                       clear()
-                      router.push('/?obrigado=1')
+                      router.push(`/obrigado?pedido=${dbOrderId ?? pixOrderId}`)
                     }}
                   >
-                    Ja paguei, voltar a loja
+                    Ja paguei, ver confirmacao
                   </Button>
                 </div>
               </CardContent>

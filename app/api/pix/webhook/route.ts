@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { notifyPixApproved } from '@/lib/pushcut'
 
 export const runtime = 'nodejs'
 
@@ -53,6 +54,23 @@ export async function POST(request: NextRequest) {
                 onConflict: 'ip'
               })
           }
+
+          // Disparar notificacao de Pix Aprovado para os 3 dispositivos com valor real
+          const approvedAmount =
+            typeof order.total === 'number' && order.total > 0
+              ? order.total
+              : typeof data?.amount === 'number'
+                ? data.amount / 100
+                : 0
+          const notifyResult = await notifyPixApproved({
+            amount: approvedAmount,
+            customerName: order.customer_name ?? undefined,
+            customerPhone: order.customer_phone ?? undefined,
+            customerDocument: order.customer_document ?? undefined,
+            externalReference: order.id,
+            paymentId: data?.id,
+          })
+          console.log('[v0] Pushcut Pix aprovado:', notifyResult)
         }
       }
       
