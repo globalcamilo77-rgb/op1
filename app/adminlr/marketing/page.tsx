@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -51,10 +51,6 @@ function countType(events: AnalyticsEvent[], type: AnalyticsEventType): number {
   return events.filter((e) => e.type === type).length
 }
 
-function sumValue(events: AnalyticsEvent[], type: AnalyticsEventType): number {
-  return events.filter((e) => e.type === type).reduce((acc, e) => acc + (e.value || 0), 0)
-}
-
 function uniqueSessionsByType(events: AnalyticsEvent[], type: AnalyticsEventType): number {
   const set = new Set<string>()
   for (const e of events) {
@@ -91,6 +87,17 @@ export default function AdminMarketingPage() {
   const [spendStart, setSpendStart] = useState('')
   const [spendEnd, setSpendEnd] = useState('')
 
+  // Compras reais da tabela orders (paid_at preenchido). NAO usa localStorage.
+  type PaidOrder = {
+    id: string
+    total: number
+    paid_at: number
+    source: string
+    medium: string
+    campaign: string
+  }
+  const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([])
+
   useEffect(() => {
     setHydrated(true)
   }, [])
@@ -100,6 +107,36 @@ export default function AdminMarketingPage() {
       router.push('/adminlr')
     }
   }, [user, router])
+
+  // Fetch das compras reais sempre que abrir o painel ou trocar o range
+  useEffect(() => {
+    let cancelled = false
+    const fetchSales = async () => {
+      try {
+        const since = new Date(rangeStart(range) || 0).toISOString()
+        const url = range === 'all' ? '/api/analytics/sales' : `/api/analytics/sales?since=${encodeURIComponent(since)}`
+        const res = await fetch(url, { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (cancelled) return
+        const list: PaidOrder[] = (json.orders ?? []).map((o: any) => ({
+          id: String(o.id),
+          total: Number(o.total) || 0,
+          paid_at: new Date(o.paid_at).getTime(),
+          source: o.source || 'direct',
+          medium: o.medium || 'none',
+          campaign: o.campaign || 'none',
+        }))
+        setPaidOrders(list)
+      } catch (err) {
+        console.error('[v0] erro ao carregar compras pagas:', err)
+      }
+    }
+    fetchSales()
+    return () => {
+      cancelled = true
+    }
+  }, [range])
 
   const sources = useMemo(() => {
     const set = new Set<string>()
@@ -121,8 +158,20 @@ export default function AdminMarketingPage() {
   const leads = uniqueSessionsByType(filteredEvents, 'lead')
   const addToCartSessions = uniqueSessionsByType(filteredEvents, 'add_to_cart')
   const beginCheckoutSessions = uniqueSessionsByType(filteredEvents, 'begin_checkout')
-  const purchaseCount = countType(filteredEvents, 'purchase')
-  const revenue = sumValue(filteredEvents, 'purchase')
+
+  // Compras e receita vem APENAS da tabela orders (paid_at), NUNCA do localStorage de eventos.
+  // Filtra paidOrders pelo range e pelo source filter selecionado.
+  const filteredPaidOrders = useMemo(() => {
+    const since = rangeStart(range)
+    return paidOrders.filter((o) => {
+      if (o.paid_at < since) return false
+      if (sourceFilter !== 'all' && o.source !== sourceFilter) return false
+      return true
+    })
+  }, [paidOrders, range, sourceFilter])
+
+  const purchaseCount = filteredPaidOrders.length
+  const revenue = filteredPaidOrders.reduce((acc, o) => acc + o.total, 0)
 
   const cvrToCart = sessions ? addToCartSessions / sessions : 0
   const cvrToCheckout = addToCartSessions ? beginCheckoutSessions / addToCartSessions : 0
@@ -140,17 +189,23 @@ export default function AdminMarketingPage() {
         revenue: number
       }
     >()
+    // Sessoes vem dos eventos do localStorage
     for (const e of filteredEvents) {
       const key = e.source || 'direct'
       if (!map.has(key)) {
         map.set(key, { source: key, sessions: new Set(), purchases: 0, revenue: 0 })
       }
-      const entry = map.get(key)!
-      entry.sessions.add(e.sessionId)
-      if (e.type === 'purchase') {
-        entry.purchases += 1
-        entry.revenue += e.value || 0
+      map.get(key)!.sessions.add(e.sessionId)
+    }
+    // Compras e receita vem APENAS de pedidos pagos
+    for (const o of filteredPaidOrders) {
+      const key = o.source || 'direct'
+      if (!map.has(key)) {
+        map.set(key, { source: key, sessions: new Set(), purchases: 0, revenue: 0 })
       }
+      const entry = map.get(key)!
+      entry.purchases += 1
+      entry.revenue += o.total
     }
     return Array.from(map.values())
       .map((entry) => ({
@@ -161,7 +216,7 @@ export default function AdminMarketingPage() {
         conversion: entry.sessions.size ? entry.purchases / entry.sessions.size : 0,
       }))
       .sort((a, b) => b.revenue - a.revenue || b.sessions - a.sessions)
-  }, [filteredEvents])
+  }, [filteredEvents, filteredPaidOrders])
 
   const campaignBreakdown = useMemo(() => {
     const map = new Map<
@@ -175,6 +230,7 @@ export default function AdminMarketingPage() {
         revenue: number
       }
     >()
+    // Sessoes vem dos eventos do localStorage
     for (const e of filteredEvents) {
       const key = `${e.source}::${e.campaign}`
       if (!map.has(key)) {
@@ -187,12 +243,24 @@ export default function AdminMarketingPage() {
           revenue: 0,
         })
       }
-      const entry = map.get(key)!
-      entry.sessions.add(e.sessionId)
-      if (e.type === 'purchase') {
-        entry.purchases += 1
-        entry.revenue += e.value || 0
+      map.get(key)!.sessions.add(e.sessionId)
+    }
+    // Compras e receita vem APENAS de pedidos pagos
+    for (const o of filteredPaidOrders) {
+      const key = `${o.source}::${o.campaign}`
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          source: o.source,
+          campaign: o.campaign,
+          sessions: new Set(),
+          purchases: 0,
+          revenue: 0,
+        })
       }
+      const entry = map.get(key)!
+      entry.purchases += 1
+      entry.revenue += o.total
     }
     return Array.from(map.values())
       .map((entry) => {
@@ -211,7 +279,7 @@ export default function AdminMarketingPage() {
         }
       })
       .sort((a, b) => b.revenue - a.revenue)
-  }, [filteredEvents, spends])
+  }, [filteredEvents, filteredPaidOrders, spends])
 
   const totalSpend = spends.reduce((acc, s) => acc + s.amount, 0)
   const overallRoas = totalSpend > 0 ? revenue / totalSpend : null
