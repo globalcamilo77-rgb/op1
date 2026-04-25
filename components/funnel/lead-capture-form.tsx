@@ -74,7 +74,12 @@ export function LeadCaptureForm({
       }
 
       trackEvent('lead', {
-        meta: { source, funnelSlug, city, type: 'lead_capture' },
+        meta: {
+          source,
+          funnelSlug: funnelSlug ?? '',
+          city: city ?? '',
+          type: 'lead_capture',
+        },
       })
       setSuccess(true)
 

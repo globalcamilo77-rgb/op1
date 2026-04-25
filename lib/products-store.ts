@@ -17,6 +17,10 @@ export interface StoreProduct {
 
 interface ProductsState {
   products: StoreProduct[]
+  isLoading: boolean
+  lastSynced: string | null
+  loadFromSupabase: () => Promise<void>
+  saveToSupabase: () => Promise<{ success?: boolean; error?: string }>
   addProduct: (product: Omit<StoreProduct, 'id'>) => void
   updateProduct: (id: string, updates: Partial<Omit<StoreProduct, 'id'>>) => void
   removeProduct: (id: string) => void
@@ -128,7 +132,7 @@ const INITIAL_PRODUCTS: StoreProduct[] = [
   { id: 'p-ele-8', name: 'Fechadura Digital Biométrica', category: 'Materiais Elétricos', subcategory: 'Controladores de Acesso', brand: 'Yale', dimensions: 'Para portas 35-55mm - 4 pilhas AA', description: 'Fechadura eletrônica com leitor biométrico e senha. Armazena até 100 digitais. Acabamento cromado escovado.', price: 489.0, stock: 25, active: true, image: '/products/cadeado.jpg' },
   { id: 'p-ele-9', name: 'Eletroduto Corrugado 25mm 50m', category: 'Materiais Elétricos', subcategory: 'Tubos e Eletrodutos', brand: 'Tigre', dimensions: '25mm diâmetro x 50m - Flexível', description: 'Eletroduto corrugado flexível em PVC. Para embutir em lajes e paredes. Antichama e resistente a impactos.', price: 95.0, stock: 90, active: true, image: '/products/tubo-pvc.jpg' },
 
-  // ─── Lonas ──────�����────────────────────────────────────────
+  // ─── Lonas ──────�������────────────────────────────────────────
   { id: 'p-lon-1', name: 'Lona Plástica Preta 4x100m', category: 'Lonas', brand: 'Lonax', dimensions: '4m largura x 100m comprimento - 100 micras', description: 'Lona plástica preta para contrapiso e proteção. Evita subida de umidade. Ideal para hortas e coberturas provisórias.', price: 320.0, stock: 50, active: true, image: '/products/lona-plastica.jpg' },
   { id: 'p-lon-2', name: 'Lona Polietileno 6x10m', category: 'Lonas', brand: 'Lona Forte', dimensions: '6x10m - 150 micras - Azul/Amarela', description: 'Lona reforçada com ilhoses nas bordas. Proteção contra sol e chuva. Para coberturas de obras e materiais.', price: 145.0, stock: 80, active: true, image: '/products/lona-plastica.jpg' },
 
@@ -186,7 +190,7 @@ export const useProductsStore = create<ProductsState>()(
     (set, get) => ({
       products: INITIAL_PRODUCTS,
       isLoading: false,
-      lastSynced: null as string | null,
+      lastSynced: null,
 
       // Carregar produtos do Supabase
       loadFromSupabase: async () => {
@@ -232,7 +236,7 @@ export const useProductsStore = create<ProductsState>()(
           if (data.success) {
             set({ lastSynced: new Date().toISOString() })
           }
-          return data
+          return { success: !!data.success, error: data.error }
         } catch (error) {
           console.error('Erro ao salvar produtos no Supabase:', error)
           return { error: 'Falha ao salvar' }
@@ -267,7 +271,7 @@ export const useProductsStore = create<ProductsState>()(
           fetch('/api/products', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, ...product, ...updates }),
+            body: JSON.stringify({ ...product, ...updates, id }),
           }).catch(console.error)
         }
       },

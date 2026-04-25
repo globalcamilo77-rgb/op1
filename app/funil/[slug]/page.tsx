@@ -205,7 +205,7 @@ export default function FunilPage({
                   rel="noreferrer"
                   onClick={() =>
                     trackEvent('lead', {
-                      meta: { type: 'whatsapp_click', slug, city: funnel.city },
+                      meta: { type: 'whatsapp_click', slug, city: funnel.city ?? '' },
                     })
                   }
                   className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-extrabold px-6 py-3 rounded-full hover:bg-[#20b858] transition-colors"

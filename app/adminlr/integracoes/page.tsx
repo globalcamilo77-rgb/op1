@@ -147,6 +147,7 @@ export default function IntegracoesPage() {
   }
 
   const saveSettings = async () => {
+    if (!supabase) return
     setSaving(true)
     try {
       const { error } = await supabase
@@ -163,6 +164,7 @@ export default function IntegracoesPage() {
   }
 
   const saveRegions = async () => {
+    if (!supabase) return
     setSaving(true)
     try {
       // Delete existing and insert new
@@ -183,6 +185,7 @@ export default function IntegracoesPage() {
   }
 
   const saveWhatsapp = async () => {
+    if (!supabase) return
     setSaving(true)
     try {
       await supabase.from('whatsapp_numbers').delete().eq('site_id', SITE_ID)
@@ -202,6 +205,7 @@ export default function IntegracoesPage() {
   }
 
   const saveOffers = async () => {
+    if (!supabase) return
     setSaving(true)
     try {
       await supabase.from('site_offers').delete().eq('site_id', SITE_ID)

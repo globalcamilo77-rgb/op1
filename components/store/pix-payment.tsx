@@ -156,8 +156,6 @@ export function PixPayment({
         phone: customerPhone,
         document: customerDocument,
       },
-      apiKey: pix.gatewayApiKey || undefined,
-      baseUrl: pix.gatewayBaseUrl || undefined,
     }).then((result) => {
       if (cancelled) return
       if (!result.ok) {
