@@ -10,6 +10,10 @@ function getSupabase() {
 
 export const dynamic = 'force-dynamic'
 
+// Os atendentes nao vivem mais na tabela attendants - eles vem dos contatos do
+// /adminlr/whatsapp (Zustand store no cliente). Esta API apenas retorna o
+// agrupamento de pedidos pagos por attendant_name (texto livre que o admin
+// preenche ao criar/editar um pedido).
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const period = searchParams.get('period') || 'month'
@@ -30,16 +34,9 @@ export async function GET(request: Request) {
   try {
     const supabase = getSupabase()
 
-    const { data: attendants, error: attErr } = await supabase
-      .from('attendants')
-      .select('id, name, email, phone, avatar_url, goal_monthly')
-      .eq('active', true)
-
-    if (attErr) throw attErr
-
     let ordersQuery = supabase
       .from('orders')
-      .select('id, attendant_id, total, status, paid_at, created_at')
+      .select('id, attendant_name, total, status, paid_at, created_at')
       .in('status', ['paid', 'confirmed', 'completed'])
 
     if (startDate) {
@@ -50,40 +47,29 @@ export async function GET(request: Request) {
 
     if (ordErr) throw ordErr
 
-    const ranking = (attendants || []).map((att) => {
-      const myOrders = (orders || []).filter((o) => o.attendant_id === att.id)
-      const revenue = myOrders.reduce((sum, o) => sum + Number(o.total || 0), 0)
-      const ordersCount = myOrders.length
-      const ticketAvg = ordersCount > 0 ? revenue / ordersCount : 0
-      const goal = Number(att.goal_monthly || 0)
-      const goalProgress = goal > 0 ? (revenue / goal) * 100 : 0
+    // Agrupar por attendant_name
+    const grouped = new Map<
+      string,
+      { name: string; revenue: number; orders_count: number }
+    >()
 
-      return {
-        id: att.id,
-        name: att.name,
-        email: att.email,
-        phone: att.phone,
-        avatar_url: att.avatar_url,
-        goal_monthly: goal,
-        revenue,
-        orders_count: ordersCount,
-        ticket_avg: ticketAvg,
-        goal_progress: goalProgress,
-      }
+    ;(orders || []).forEach((order) => {
+      const name = (order.attendant_name || '').trim()
+      if (!name) return
+
+      const existing = grouped.get(name) || { name, revenue: 0, orders_count: 0 }
+      existing.revenue += Number(order.total || 0)
+      existing.orders_count += 1
+      grouped.set(name, existing)
     })
 
-    ranking.sort((a, b) => b.revenue - a.revenue)
-
-    const rankingWithPosition = ranking.map((r, index) => ({
-      ...r,
-      position: index + 1,
-    }))
+    const stats = Array.from(grouped.values())
 
     return NextResponse.json({
-      ranking: rankingWithPosition,
+      stats,
       period,
-      total_revenue: ranking.reduce((sum, r) => sum + r.revenue, 0),
-      total_orders: ranking.reduce((sum, r) => sum + r.orders_count, 0),
+      total_revenue: stats.reduce((sum, s) => sum + s.revenue, 0),
+      total_orders: stats.reduce((sum, s) => sum + s.orders_count, 0),
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
