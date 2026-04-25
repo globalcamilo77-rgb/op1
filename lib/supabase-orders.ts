@@ -5,6 +5,7 @@ export interface OrderInput {
   customerName?: string
   customerEmail?: string
   customerPhone?: string
+  customerDocument?: string
   addressRaw?: string
   city?: string
   postalCode?: string
@@ -15,6 +16,8 @@ export interface OrderInput {
   paymentMethod?: string
   status?: string
   items: CartItem[]
+  tracking?: Record<string, string>
+  attendantName?: string | null
 }
 
 export async function createOrder(order: OrderInput): Promise<string | null> {
@@ -22,12 +25,16 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
   const supabase = getSupabase()
   if (!supabase) return null
 
+  const trackingObj =
+    order.tracking && typeof order.tracking === 'object' ? order.tracking : {}
+
   const { data, error } = await supabase
     .from('orders')
     .insert({
       customer_name: order.customerName ?? null,
       customer_email: order.customerEmail ?? null,
       customer_phone: order.customerPhone ?? null,
+      customer_document: order.customerDocument ?? null,
       address_raw: order.addressRaw ?? null,
       city: order.city ?? null,
       postal_code: order.postalCode ?? null,
@@ -37,6 +44,8 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
       total: order.total,
       payment_method: order.paymentMethod ?? null,
       status: order.status ?? 'pending',
+      tracking: trackingObj,
+      attendant_name: order.attendantName ?? null,
     })
     .select('id')
     .single()
