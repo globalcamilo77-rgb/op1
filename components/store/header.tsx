@@ -124,32 +124,36 @@ export function NotificationBar() {
   // Duplica os itens para criar loop infinito sem corte visual
   const marqueeItems = [...promoItems, ...promoItems]
 
-  const Wrapper: React.ElementType = number ? 'a' : 'div'
-  const wrapperProps = number
-    ? {
-        href: `https://wa.me/${number}`,
-        onClick: handleClick,
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        'aria-label': 'Falar com a AlfaConstrução no WhatsApp',
-      }
-    : {}
+  const wrapperClass =
+    'block bg-gradient-to-r from-[var(--orange-primary)] to-[var(--orange-dark)] text-white py-2 sm:py-2.5 overflow-hidden cursor-pointer select-none'
 
-  return (
-    <Wrapper
-      {...wrapperProps}
-      className="block bg-gradient-to-r from-[var(--orange-primary)] to-[var(--orange-dark)] text-white py-2 sm:py-2.5 overflow-hidden cursor-pointer select-none"
-    >
-      <div className="marquee-track text-xs sm:text-sm font-medium">
-        {marqueeItems.map((item, idx) => (
-          <span key={`${item}-${idx}`} className="inline-flex items-center px-6">
-            <span className="mr-3 inline-block h-1.5 w-1.5 rounded-full bg-white/80" aria-hidden />
-            {item}
-          </span>
-        ))}
-      </div>
-    </Wrapper>
+  const inner = (
+    <div className="marquee-track text-xs sm:text-sm font-medium">
+      {marqueeItems.map((item, idx) => (
+        <span key={`${item}-${idx}`} className="inline-flex items-center px-6">
+          <span className="mr-3 inline-block h-1.5 w-1.5 rounded-full bg-white/80" aria-hidden />
+          {item}
+        </span>
+      ))}
+    </div>
   )
+
+  if (number) {
+    return (
+      <a
+        href={`https://wa.me/${number}`}
+        onClick={handleClick}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Falar com a AlfaConstrução no WhatsApp"
+        className={wrapperClass}
+      >
+        {inner}
+      </a>
+    )
+  }
+
+  return <div className={wrapperClass}>{inner}</div>
 }
 
 export function HeaderTop() {
