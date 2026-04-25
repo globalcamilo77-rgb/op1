@@ -110,20 +110,20 @@ export function normalizeKoliseu(raw: unknown): GatewayChargeNormalized {
 
 export async function createGatewayPix(input: GatewayChargeInput): Promise<GatewayResult> {
   try {
-    const res = await fetch('/api/pix/create-payment', {
+    const res = await fetch('/api/pix/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     })
     const json = await res.json().catch(() => null)
-    if (!res.ok || !json?.ok) {
+    if (!res.ok || json?.error) {
       return {
         ok: false,
         error: json?.error || `HTTP ${res.status}`,
-        raw: json?.raw ?? json,
+        raw: json?.details ?? json,
       }
     }
-    return { ok: true, data: normalizeKoliseu(json.data) }
+    return { ok: true, data: normalizeKoliseu(json) }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     return { ok: false, error: message }

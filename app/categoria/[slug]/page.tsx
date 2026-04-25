@@ -19,7 +19,7 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
   const { slug } = use(params)
   const category = CATEGORIES.find((cat) => cat.slug === slug)
 
-  const { products } = useProductsStore()
+  const { products, loadFromSupabase } = useProductsStore()
 
   const [activeSub, setActiveSub] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -27,7 +27,8 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   const allProducts = mounted ? products : []
 
@@ -94,10 +95,9 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
             <div className="mt-2 flex items-end justify-between gap-4 flex-wrap">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{category.name}</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {totalActive} {totalActive === 1 ? 'produto disponivel' : 'produtos disponiveis'}
-                  {activeSub ? ` em ${activeSub}` : ''}
-                </p>
+                {activeSub ? (
+                  <p className="text-sm text-muted-foreground mt-1">{activeSub}</p>
+                ) : null}
               </div>
 
               <div className="relative w-full md:w-72">

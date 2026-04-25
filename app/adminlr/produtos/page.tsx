@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
 import {
   Plus,
   Pencil,
@@ -11,6 +11,8 @@ import {
   Cloud,
   CloudDownload,
   CloudUpload,
+  Upload,
+  Loader2,
 } from 'lucide-react'
 import { AdminTopbar } from '@/components/admin/topbar'
 import { useProductsStore, type StoreProduct } from '@/lib/products-store'
@@ -25,6 +27,8 @@ type EditingProduct = Omit<StoreProduct, 'id'> & { id?: string }
 const EMPTY_FORM: EditingProduct = {
   name: '',
   category: '',
+  brand: '',
+  dimensions: '',
   price: 0,
   stock: 0,
   description: '',
@@ -37,14 +41,48 @@ function currency(value: number) {
 }
 
 export default function AdminProdutosPage() {
-  const { products, addProduct, updateProduct, removeProduct, toggleActive } = useProductsStore()
+  const { products, addProduct, updateProduct, removeProduct, toggleActive, loadFromSupabase, saveToSupabase } = useProductsStore()
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<EditingProduct>(EMPTY_FORM)
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [syncing, setSyncing] = useState<'idle' | 'pull' | 'push'>('idle')
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabaseReady = isSupabaseConfigured()
+
+  // Carregar produtos do Supabase ao montar
+  useEffect(() => {
+    loadFromSupabase()
+  }, [loadFromSupabase])
+
+  async function handleImageUpload(file: File) {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        alert(data.error || 'Erro ao fazer upload')
+        return
+      }
+      
+      setEditing({ ...editing, image: data.url })
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Erro ao fazer upload da imagem')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const formatSupabaseError = (error: unknown): string => {
     if (!error) return 'Erro desconhecido.'
@@ -67,9 +105,9 @@ export default function AdminProdutosPage() {
     try {
       setSyncing('pull')
       setSyncMessage(null)
-      const remote = await listRemoteProducts()
-      useProductsStore.setState({ products: remote })
-      setSyncMessage(`Baixados ${remote.length} produtos do Supabase.`)
+      await loadFromSupabase()
+      const state = useProductsStore.getState()
+      setSyncMessage(`Baixados ${state.products.length} produtos do Supabase.`)
     } catch (error) {
       console.error(error)
       setSyncMessage(`Falha ao baixar: ${formatSupabaseError(error)}`)
@@ -82,8 +120,12 @@ export default function AdminProdutosPage() {
     try {
       setSyncing('push')
       setSyncMessage(null)
-      await upsertRemoteProducts(products)
-      setSyncMessage(`Enviados ${products.length} produtos para o Supabase.`)
+      const result = await saveToSupabase()
+      if (result?.error) {
+        setSyncMessage(`Falha ao enviar: ${result.error}`)
+      } else {
+        setSyncMessage(`Enviados ${products.length} produtos para o Supabase.`)
+      }
     } catch (error) {
       console.error(error)
       setSyncMessage(`Falha ao enviar: ${formatSupabaseError(error)}`)
@@ -123,6 +165,8 @@ export default function AdminProdutosPage() {
     const payload = {
       name: editing.name.trim(),
       category: editing.category.trim(),
+      brand: editing.brand?.trim() || '',
+      dimensions: editing.dimensions?.trim() || '',
       price: Number(editing.price) || 0,
       stock: Number(editing.stock) || 0,
       description: editing.description?.trim() || '',
@@ -400,6 +444,24 @@ export default function AdminProdutosPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Marca</label>
+                <input
+                  value={editing.brand || ''}
+                  onChange={(e) => setEditing({ ...editing, brand: e.target.value })}
+                  placeholder="Ex: Votoran, Tigre, Gerdau..."
+                  className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-sm font-medium text-foreground">Medidas / Dimensoes</label>
+                <input
+                  value={editing.dimensions || ''}
+                  onChange={(e) => setEditing({ ...editing, dimensions: e.target.value })}
+                  placeholder="Ex: 50kg - Saco 40x60cm, 10mm x 12m..."
+                  className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Preco (R$)</label>
                 <input
                   type="number"
@@ -432,13 +494,57 @@ export default function AdminProdutosPage() {
                 </label>
               </div>
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-sm font-medium text-foreground">URL da imagem</label>
-                <input
-                  value={editing.image || ''}
-                  onChange={(e) => setEditing({ ...editing, image: e.target.value })}
-                  placeholder="https://..."
-                  className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
-                />
+                <label className="text-sm font-medium text-foreground">Imagem do produto</label>
+                <div className="flex gap-3 items-start">
+                  {editing.image && (
+                    <div className="w-20 h-20 rounded border border-border overflow-hidden flex-shrink-0">
+                      <img 
+                        src={editing.image} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImageUpload(file)
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center gap-2 px-4 py-2 border border-border rounded text-sm hover:bg-muted transition-colors disabled:opacity-50"
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} />
+                          Fazer upload de imagem
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-muted-foreground">
+                      Ou cole uma URL diretamente:
+                    </p>
+                    <input
+                      value={editing.image || ''}
+                      onChange={(e) => setEditing({ ...editing, image: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <label className="text-sm font-medium text-foreground">Descricao</label>

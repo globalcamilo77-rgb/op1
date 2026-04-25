@@ -83,7 +83,7 @@ export const DEFAULT_PIX: PixSettings = {
   gatewayEnabled: true,
   gatewayApiKey: '',
   gatewayBaseUrl: 'https://www.koliseu.cloud/api/v1',
-  gatewayHasServerKey: false,
+  gatewayHasServerKey: true,
 }
 
 function newId() {

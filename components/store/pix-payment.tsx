@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import QRCode from 'qrcode'
 import {
   AlertCircle,
@@ -11,6 +12,7 @@ import {
   QrCode,
   ShieldCheck,
   Zap,
+  CheckCircle2,
 } from 'lucide-react'
 import { usePixStore } from '@/lib/pix-store'
 import { generatePixPayload, generateTxid } from '@/lib/pix-payload'
@@ -45,6 +47,7 @@ export function PixPayment({
   onCopied,
   onGatewayCharge,
 }: PixPaymentProps) {
+  const router = useRouter()
   const pix = usePixStore()
   const whatsappContact = useWhatsAppStore((state) => state.getContactForCurrentWindow())
   const whatsappNumber = whatsappContact?.number ?? ''
@@ -53,18 +56,85 @@ export function PixPayment({
   const [qrUrl, setQrUrl] = useState<string>('')
   const [copied, setCopied] = useState(false)
   const [trackedSelected, setTrackedSelected] = useState(false)
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
+  const [checkingPayment, setCheckingPayment] = useState(false)
 
   const [gatewayCharge, setGatewayCharge] = useState<GatewayChargeNormalized | null>(null)
   const [gatewayLoading, setGatewayLoading] = useState(false)
   const [gatewayError, setGatewayError] = useState<string>('')
+  const [serverHasKey, setServerHasKey] = useState<boolean | null>(null)
   const gatewayFiredRef = useRef<string>('')
 
   const txid = useMemo(() => generateTxid(orderId ? 'OB' : 'PX'), [orderId])
 
+  // Verificar se o servidor tem a chave da API configurada
+  useEffect(() => {
+    fetch('/api/pix/config')
+      .then((res) => res.json())
+      .then((data) => {
+        setServerHasKey(data.hasServerKey === true)
+      })
+      .catch(() => {
+        setServerHasKey(false)
+      })
+  }, [])
+
+  // Polling para verificar status do pagamento
+  useEffect(() => {
+    if (!gatewayCharge?.id || paymentConfirmed) return
+
+    const checkPayment = async () => {
+      try {
+        setCheckingPayment(true)
+        const res = await fetch(`/api/pix/status?id=${gatewayCharge.id}`)
+        const data = await res.json()
+        
+        // Verificar diferentes formatos de resposta
+        const status = data.data?.status || data.status
+        if (status === 'paid' || status === 'completed' || status === 'PAID' || status === 'COMPLETED') {
+          setPaymentConfirmed(true)
+          
+          // Bloquear IP e redirecionar
+          await fetch('/api/pix/confirm-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: orderId || txid,
+              transactionId: gatewayCharge.id,
+              amount,
+              customerName,
+              customerEmail,
+              customerPhone,
+              customerDocument,
+            }),
+          })
+          
+          // Redirecionar para página de obrigado
+          setTimeout(() => {
+            router.push(`/obrigado?pedido=${orderId || txid}`)
+          }, 2000)
+        }
+      } catch (error) {
+        console.error('Erro ao verificar pagamento:', error)
+      } finally {
+        setCheckingPayment(false)
+      }
+    }
+
+    // Verificar a cada 5 segundos
+    const interval = setInterval(checkPayment, 5000)
+    
+    // Verificar imediatamente também
+    checkPayment()
+
+    return () => clearInterval(interval)
+  }, [gatewayCharge?.id, paymentConfirmed, orderId, txid, amount, customerName, customerEmail, customerPhone, customerDocument, router])
+
+  // Usar gateway se tem chave local OU se o servidor tem a chave configurada
   const shouldUseGateway =
     pix.gatewayEnabled &&
     pix.gatewayProvider !== 'none' &&
-    (pix.gatewayApiKey.trim() !== '' || pix.gatewayHasServerKey)
+    (pix.gatewayApiKey.trim() !== '' || serverHasKey === true)
 
   useEffect(() => {
     if (!shouldUseGateway || amount <= 0) return
@@ -86,8 +156,6 @@ export function PixPayment({
         phone: customerPhone,
         document: customerDocument,
       },
-      apiKey: pix.gatewayApiKey || undefined,
-      baseUrl: pix.gatewayBaseUrl || undefined,
     }).then((result) => {
       if (cancelled) return
       if (!result.ok) {
@@ -220,11 +288,44 @@ export function PixPayment({
     )
   }
 
+  // Aguardar verificação do servidor
+  if (serverHasKey === null) {
+    return (
+      <div className="rounded-lg border border-border bg-secondary/40 p-4 text-sm text-muted-foreground flex items-center gap-2">
+        <Loader2 size={16} className="animate-spin" />
+        Carregando configuracao de pagamento...
+      </div>
+    )
+  }
+
   if (!shouldUseGateway && !pix.pixKey && !pix.staticPayload) {
     return (
       <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
         PIX ainda nao configurado. O super admin precisa cadastrar a chave PIX ou habilitar o
         gateway Koliseu em <span className="font-semibold">/admin/pix</span>.
+      </div>
+    )
+  }
+
+  // Exibir confirmação de pagamento
+  if (paymentConfirmed) {
+    return (
+      <div className="rounded-lg border-2 border-green-500 bg-green-50 p-6 text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
+            <CheckCircle2 size={40} className="text-white" />
+          </div>
+        </div>
+        <h3 className="text-xl font-bold text-green-700 mb-2">
+          Pagamento Confirmado!
+        </h3>
+        <p className="text-green-600 mb-4">
+          Seu pagamento de {currency(amount)} foi recebido com sucesso.
+        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+          <Loader2 size={16} className="animate-spin" />
+          Redirecionando para a página de confirmação...
+        </div>
       </div>
     )
   }
@@ -378,6 +479,81 @@ export function PixPayment({
               <MessageCircle size={16} />
               Enviar comprovante pelo WhatsApp
             </a>
+          )}
+
+          {/* Botao Ja Paguei com verificacao */}
+          {gatewayCharge?.id && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {checkingPayment ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-[var(--orange-primary)]" />
+                      <span>Verificando pagamento...</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span>Aguardando confirmacao do pagamento</span>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!gatewayCharge?.id) return
+                    setCheckingPayment(true)
+                    try {
+                      const res = await fetch(`/api/pix/status?id=${gatewayCharge.id}`)
+                      const data = await res.json()
+                      const status = data.data?.status || data.status
+                      if (status === 'paid' || status === 'completed' || status === 'PAID' || status === 'COMPLETED') {
+                        setPaymentConfirmed(true)
+                        await fetch('/api/pix/confirm-payment', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            orderId: orderId || txid,
+                            transactionId: gatewayCharge.id,
+                            amount,
+                            customerName,
+                            customerEmail,
+                            customerPhone,
+                            customerDocument,
+                          }),
+                        })
+                        setTimeout(() => {
+                          router.push(`/obrigado?pedido=${orderId || txid}`)
+                        }, 1500)
+                      } else {
+                        alert('Pagamento ainda nao confirmado. Aguarde alguns instantes e tente novamente.')
+                      }
+                    } catch (error) {
+                      alert('Erro ao verificar pagamento. Tente novamente.')
+                    } finally {
+                      setCheckingPayment(false)
+                    }
+                  }}
+                  disabled={checkingPayment}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {checkingPayment ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} />
+                      Ja paguei
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                O sistema verifica automaticamente a cada 5 segundos. Clique em &quot;Ja paguei&quot; para verificar imediatamente.
+              </p>
+            </div>
           )}
         </div>
       </div>

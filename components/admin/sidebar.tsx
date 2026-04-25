@@ -21,6 +21,9 @@ import {
   QrCode,
   MapPin,
   Wallet,
+  Plug,
+  Filter,
+  Trophy,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -30,6 +33,7 @@ const adminLinks = [
   { href: '/adminlr/pedidos', label: 'Pedidos', icon: Package },
   { href: '/adminlr/produtos', label: 'Produtos', icon: ShoppingBag },
   { href: '/adminlr/categorias', label: 'Categorias', icon: FolderOpen },
+  { href: '/adminlr/ranking', label: 'Ranking', icon: Trophy },
   { href: '/adminlr/clientes', label: 'Clientes', icon: Users },
   { href: '/adminlr/lojistas', label: 'Lojistas', icon: Store },
   { href: '/adminlr/usuarios', label: 'Usuarios', icon: UserCog },
@@ -41,10 +45,12 @@ const superAdminLinks = [
   { href: '/adminlr/imagens', label: 'Imagens IA', icon: Images },
   { href: '/adminlr/marketing', label: 'Marketing', icon: TrendingUp },
   { href: '/adminlr/cidades', label: 'Cidades (LPs)', icon: MapPin },
+  { href: '/adminlr/funis', label: 'Funis', icon: Filter },
   { href: '/adminlr/whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { href: '/adminlr/pagamentos', label: 'Pagamentos', icon: Wallet },
   { href: '/adminlr/pix', label: 'PIX', icon: QrCode },
   { href: '/adminlr/sincronizar', label: 'Sincronizar', icon: Cloud },
+  { href: '/adminlr/integracoes', label: 'Integracoes', icon: Plug },
   { href: '/adminlr/relatorios', label: 'Relatorios', icon: BarChart3 },
   { href: '/adminlr/backup', label: 'Backup', icon: HardDrive },
 ]

@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { AppearanceProvider } from '@/components/store/appearance-provider'
 import { AnalyticsTracker } from '@/components/store/analytics-tracker'
+import { WhatsAppButton } from '@/components/store/whatsapp-button'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -11,18 +12,8 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'AlfaConstrução - Melhores orcamentos com entrega rapida',
   description: 'O Mercado da Construcao. Compre materiais de construcao com os melhores precos e entrega rapida na sua regiao.',
-  generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/logo.png',
-        type: 'image/png',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
+    icon: [{ url: '/logo.png', type: 'image/png' }],
     apple: '/logo.png',
     shortcut: '/logo.png',
   },
@@ -53,6 +44,7 @@ export default function RootLayout({
         <AppearanceProvider />
         <AnalyticsTracker />
         {children}
+        <WhatsAppButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

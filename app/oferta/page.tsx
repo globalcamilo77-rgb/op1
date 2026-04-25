@@ -63,7 +63,7 @@ function Countdown({ deadline }: { deadline: number }) {
 
 export default function OfertaPage() {
   const router = useRouter()
-  const { products } = useProductsStore()
+  const { products, loadFromSupabase } = useProductsStore()
   const { addItem } = useCartStore()
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
   const getContact = useWhatsAppStore((state) => state.getContactForCurrentWindow)
@@ -81,7 +81,8 @@ export default function OfertaPage() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   const featured = useMemo(() => {
     if (!mounted) return []
