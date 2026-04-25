@@ -23,6 +23,7 @@ import {
   Wallet,
   Plug,
   Filter,
+  Trophy,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,7 @@ const adminLinks = [
   { href: '/adminlr/pedidos', label: 'Pedidos', icon: Package },
   { href: '/adminlr/produtos', label: 'Produtos', icon: ShoppingBag },
   { href: '/adminlr/categorias', label: 'Categorias', icon: FolderOpen },
+  { href: '/adminlr/ranking', label: 'Ranking', icon: Trophy },
   { href: '/adminlr/clientes', label: 'Clientes', icon: Users },
   { href: '/adminlr/lojistas', label: 'Lojistas', icon: Store },
   { href: '/adminlr/usuarios', label: 'Usuarios', icon: UserCog },
