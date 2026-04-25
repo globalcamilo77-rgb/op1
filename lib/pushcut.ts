@@ -1,21 +1,32 @@
-// Helper para enviar notificacoes via Pushcut quando um Pix e gerado.
-// Os 3 endpoints disparam para 3 dispositivos/contas distintas.
+// Helper para enviar notificacoes via Pushcut.
+// Cada evento (gerado / aprovado) tem 3 endpoints, um por dispositivo.
+// IMPORTANTE: o nome da notification e case-sensitive e deve existir no Pushcut do dispositivo correspondente.
 
-// IMPORTANTE: o nome da notification e case-sensitive e deve existir no
-// Pushcut do dispositivo correspondente.
-const PUSHCUT_ENDPOINTS = [
+const PUSHCUT_GENERATED_ENDPOINTS = [
   'https://api.pushcut.io/1QF9kMziOF12FeAKJby0B/notifications/Alfa%20',
   'https://api.pushcut.io/8DnJaf6bHxILOHcg2BIbY/notifications/Gerado',
   'https://api.pushcut.io/G7TVP0BQZvdZeVlNdxBpM/notifications/ALFA',
 ]
 
-export interface PixGeneratedPayload {
+const PUSHCUT_APPROVED_ENDPOINTS = [
+  'https://api.pushcut.io/1QF9kMziOF12FeAKJby0B/notifications/Alfa%2002%20',
+  'https://api.pushcut.io/8DnJaf6bHxILOHcg2BIbY/notifications/Aprovado',
+  'https://api.pushcut.io/G7TVP0BQZvdZeVlNdxBpM/notifications/Alfa',
+]
+
+export interface PixNotificationPayload {
   amount: number
   customerName?: string
   customerPhone?: string
   customerDocument?: string
   externalReference?: string
   paymentId?: string
+}
+
+export interface NotifyResult {
+  ok: number
+  failed: number
+  details: Array<{ url: string; status: number; ok: boolean; error?: string }>
 }
 
 function formatBRL(value: number): string {
@@ -25,21 +36,12 @@ function formatBRL(value: number): string {
   }).format(value)
 }
 
-export async function notifyPixGenerated(data: PixGeneratedPayload): Promise<{
-  ok: number
-  failed: number
-  details: Array<{ url: string; status: number; ok: boolean; error?: string }>
-}> {
-  const valueFormatted = formatBRL(data.amount)
-
-  const body = {
-    title: 'Pix Gerado',
-    text: valueFormatted,
-    input: valueFormatted,
-  }
-
+async function dispatch(
+  endpoints: string[],
+  body: { title: string; text: string; input: string }
+): Promise<NotifyResult> {
   const results = await Promise.allSettled(
-    PUSHCUT_ENDPOINTS.map(async (url) => {
+    endpoints.map(async (url) => {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 5000)
       try {
@@ -73,4 +75,26 @@ export async function notifyPixGenerated(data: PixGeneratedPayload): Promise<{
   const failed = details.length - ok
 
   return { ok, failed, details }
+}
+
+export async function notifyPixGenerated(
+  data: PixNotificationPayload
+): Promise<NotifyResult> {
+  const valueFormatted = formatBRL(data.amount)
+  return dispatch(PUSHCUT_GENERATED_ENDPOINTS, {
+    title: 'Pix Gerado',
+    text: valueFormatted,
+    input: valueFormatted,
+  })
+}
+
+export async function notifyPixApproved(
+  data: PixNotificationPayload
+): Promise<NotifyResult> {
+  const valueFormatted = formatBRL(data.amount)
+  return dispatch(PUSHCUT_APPROVED_ENDPOINTS, {
+    title: 'Pix Aprovado!',
+    text: valueFormatted,
+    input: valueFormatted,
+  })
 }
