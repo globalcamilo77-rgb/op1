@@ -102,26 +102,53 @@ export function NotificationBar() {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // Lista de promocoes que rodam na marquee. O texto admin (notificationBarText)
+  // entra como primeiro item — operadores podem separar varias frases por " | ".
+  const promoItems = (() => {
+    const fromAdmin = (message || '')
+      .split('|')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const defaults = [
+      '5% OFF pagando com PIX',
+      'Frete grátis para toda região',
+      'Atendimento todos os dias das 08h às 22h',
+      'Orçamento rápido pelo WhatsApp',
+      'Materiais de obra com entrega rápida',
+    ]
+    const merged = [...fromAdmin, ...defaults]
+    // remove duplicados mantendo ordem
+    return Array.from(new Set(merged)).slice(0, 8)
+  })()
+
+  // Duplica os itens para criar loop infinito sem corte visual
+  const marqueeItems = [...promoItems, ...promoItems]
+
+  const Wrapper: React.ElementType = number ? 'a' : 'div'
+  const wrapperProps = number
+    ? {
+        href: `https://wa.me/${number}`,
+        onClick: handleClick,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        'aria-label': 'Falar com a AlfaConstrução no WhatsApp',
+      }
+    : {}
+
   return (
-    <div className="bg-gradient-to-r from-[var(--orange-primary)] to-[var(--orange-dark)] text-white px-3 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm flex justify-center items-center flex-wrap gap-x-2 gap-y-1 text-center sm:text-left">
-      <span className="leading-snug font-medium">
-        {message}
-        {number ? (
-          <>
-            {' '}
-            <a
-              href={`https://wa.me/${number}`}
-              onClick={handleClick}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-white/90 whitespace-nowrap"
-            >
-              Clique aqui
-            </a>
-          </>
-        ) : null}
-      </span>
-    </div>
+    <Wrapper
+      {...wrapperProps}
+      className="block bg-gradient-to-r from-[var(--orange-primary)] to-[var(--orange-dark)] text-white py-2 sm:py-2.5 overflow-hidden cursor-pointer select-none"
+    >
+      <div className="marquee-track text-xs sm:text-sm font-medium">
+        {marqueeItems.map((item, idx) => (
+          <span key={`${item}-${idx}`} className="inline-flex items-center px-6">
+            <span className="mr-3 inline-block h-1.5 w-1.5 rounded-full bg-white/80" aria-hidden />
+            {item}
+          </span>
+        ))}
+      </div>
+    </Wrapper>
   )
 }
 

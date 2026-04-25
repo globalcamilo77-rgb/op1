@@ -152,3 +152,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Marquee (barra de promocoes deslizante no topo) */
+@keyframes marquee-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: marquee-slide 30s linear infinite;
+  will-change: transform;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
