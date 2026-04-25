@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -6,6 +7,7 @@ import { AppearanceProvider } from '@/components/store/appearance-provider'
 import { AnalyticsTracker } from '@/components/store/analytics-tracker'
 import { WhatsAppButton } from '@/components/store/whatsapp-button'
 import { ActiveCityBanner } from '@/components/store/active-city-banner'
+import { TrackingParamsCapture } from '@/components/tracking-params-capture'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -44,6 +46,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AppearanceProvider />
         <AnalyticsTracker />
+        <Suspense fallback={null}>
+          <TrackingParamsCapture />
+        </Suspense>
         <ActiveCityBanner />
         {children}
         <WhatsAppButton />

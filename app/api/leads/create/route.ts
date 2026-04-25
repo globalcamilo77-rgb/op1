@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       funnel_slug,
       whatsapp_number,
       message,
+      tracking,
     } = body
 
     if (!name || !phone) {
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
           funnel_slug: funnel_slug || null,
           whatsapp_number: whatsapp_number || null,
           status: 'new',
+          tracking: tracking && typeof tracking === 'object' ? tracking : {},
         },
       ])
       .select('id')

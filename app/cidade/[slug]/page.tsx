@@ -24,6 +24,7 @@ import { useAnalyticsStore } from '@/lib/analytics-store'
 import { useCitiesStore, type CityContact, type CityPage } from '@/lib/cities-store'
 import { useAppearanceStore, DEFAULT_APPEARANCE } from '@/lib/appearance-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
+import { useTrackedHref, useTrackingParamsStore } from '@/lib/tracking-params-store'
 
 function currency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -87,6 +88,8 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   const city = useCitiesStore((state) => state.cities.find((c) => c.slug === slug))
   const getContact = useCitiesStore((state) => state.getContactForCity)
   const setActiveCity = useActiveCityStore((state) => state.setActiveCity)
+  const trackedHref = useTrackedHref()
+  const trackingParams = useTrackingParamsStore((state) => state.params)
 
   useEffect(() => {
     if (mounted && city) {
@@ -192,9 +195,14 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
 
   const handleWhatsApp = () => {
     if (!contact) return
-    const message = `${safeCity.defaultMessage}${name.trim() ? `\n\nMeu nome: ${name.trim()}` : ''}${
+    let message = `${safeCity.defaultMessage}${name.trim() ? `\n\nMeu nome: ${name.trim()}` : ''}${
       postal.trim() ? `\nCEP: ${postal.trim()}` : ''
     }`
+    const trackingEntries = Object.entries(trackingParams).filter(([, v]) => v && v.length > 0)
+    if (trackingEntries.length > 0) {
+      const trackingTag = trackingEntries.map(([k, v]) => `${k}=${v}`).join(' | ')
+      message = `${message}\n\n[origem: ${trackingTag}]`
+    }
     trackEvent('lead', {
       meta: {
         type: 'whatsapp_click',
@@ -260,10 +268,10 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
             <MapPin size={16} /> {safeCity.cityName}
             {safeCity.state ? ` - ${safeCity.state}` : ''}
           </div>
-          <a
-            href="/loja"
-            className="text-sm font-semibold text-foreground hover:text-[var(--orange-primary)] transition-colors"
-          >
+              <a
+                href={trackedHref('/loja')}
+                className="text-sm font-semibold text-foreground hover:text-[var(--orange-primary)] transition-colors"
+              >
             Ver loja
           </a>
         </div>
@@ -421,7 +429,9 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
               {categories.map((cat) => (
                 <a
                   key={cat}
-                  href={`/categoria/${encodeURIComponent(cat.toLowerCase().replace(/\s+/g, '-'))}`}
+                  href={trackedHref(
+                    `/categoria/${encodeURIComponent(cat.toLowerCase().replace(/\s+/g, '-'))}`
+                  )}
                   className="bg-card border border-border rounded-xl px-4 py-5 text-center hover:border-[var(--orange-primary)] hover:shadow-md transition-all"
                 >
                   <PackageCheck className="mx-auto mb-2 text-[var(--orange-primary)]" size={24} />
@@ -518,7 +528,7 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
           {activeProducts.length > 0 && (
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="/loja"
+                href={trackedHref('/loja')}
                 className="inline-flex items-center gap-2 bg-foreground text-background hover:bg-[var(--graphite-soft)] px-6 py-3 rounded-full font-bold text-sm transition-colors"
               >
                 Ver loja completa
@@ -685,10 +695,10 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
             <MessageCircle size={16} />
             Atendimento pelo WhatsApp
           </button>
-          <a
-            href="/loja"
-            className="inline-flex items-center gap-2 bg-white text-[var(--orange-dark)] hover:bg-white/90 px-6 py-3 rounded-full font-bold text-sm"
-          >
+              <a
+                href={trackedHref('/loja')}
+                className="inline-flex items-center gap-2 bg-white text-[var(--orange-dark)] hover:bg-white/90 px-6 py-3 rounded-full font-bold text-sm"
+              >
             Ver loja completa
             <ArrowRight size={16} />
           </a>

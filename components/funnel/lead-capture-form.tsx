@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { useAnalyticsStore } from '@/lib/analytics-store'
+import { useTrackingParamsStore } from '@/lib/tracking-params-store'
 
 interface LeadCaptureFormProps {
   source: string
@@ -33,6 +34,7 @@ export function LeadCaptureForm({
   className = '',
 }: LeadCaptureFormProps) {
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
+  const trackingParams = useTrackingParamsStore((state) => state.params)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -65,6 +67,7 @@ export function LeadCaptureForm({
           source_page: source,
           funnel_slug: funnelSlug || null,
           whatsapp_number: whatsappNumber || null,
+          tracking: trackingParams,
         }),
       })
 

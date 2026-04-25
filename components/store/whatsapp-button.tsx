@@ -8,6 +8,7 @@ import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
+import { useTrackingParamsStore } from '@/lib/tracking-params-store'
 
 export function WhatsAppButton() {
   const pathname = usePathname()
@@ -23,6 +24,7 @@ export function WhatsAppButton() {
   const getContactForCity = useCitiesStore((state) => state.getContactForCity)
   const getCityBySlug = useCitiesStore((state) => state.getCityBySlug)
   const activeCitySlug = useActiveCityStore((state) => state.slug)
+  const trackingParams = useTrackingParamsStore((state) => state.params)
 
   useEffect(() => {
     setMounted(true)
@@ -76,7 +78,16 @@ export function WhatsAppButton() {
   }
 
   const handleClick = () => {
-    const encodedMessage = encodeURIComponent(message || '')
+    let finalMessage = message || ''
+
+    // Anexa origem da campanha ao final da mensagem para o atendente saber a origem do lead
+    const trackingEntries = Object.entries(trackingParams).filter(([, v]) => v && v.length > 0)
+    if (trackingEntries.length > 0) {
+      const trackingTag = trackingEntries.map(([k, v]) => `${k}=${v}`).join(' | ')
+      finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
+    }
+
+    const encodedMessage = encodeURIComponent(finalMessage)
     const whatsappUrl = `https://wa.me/${number}${encodedMessage ? `?text=${encodedMessage}` : ''}`
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
   }
