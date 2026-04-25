@@ -19,10 +19,17 @@ export function NotificationBar() {
   const enabled = useAppearanceStore((state) => state.notificationBarEnabled)
   const text = useAppearanceStore((state) => state.notificationBarText)
   const footerWhatsapp = useAppearanceStore((state) => state.footerWhatsapp)
-  const { contacts, defaultMessage } = useWhatsAppStore(
+  const {
+    contacts,
+    defaultMessage,
+    getContactForCurrentClickBlock,
+    registerClickAndGetContact,
+  } = useWhatsAppStore(
     useShallow((state) => ({
       contacts: state.contacts,
       defaultMessage: state.defaultMessage,
+      getContactForCurrentClickBlock: state.getContactForCurrentClickBlock,
+      registerClickAndGetContact: state.registerClickAndGetContact,
     })),
   )
   const getContactForCity = useCitiesStore((state) => state.getContactForCity)
@@ -39,9 +46,10 @@ export function NotificationBar() {
 
   if (!visible) return null
 
-  // Resolver numero do WhatsApp seguindo a mesma prioridade do botao flutuante
+  // Resolver numero seguindo a mesma prioridade do botao flutuante
   let number: string | null = null
   let cityMessage: string | null = null
+  let useClickRotation = false
 
   if (mounted) {
     const cityMatch = pathname?.match(/^\/cidade\/([^/]+)/)
@@ -57,11 +65,10 @@ export function NotificationBar() {
     }
 
     if (!number) {
-      const activeContacts = contacts.filter(
-        (c) => c.active && c.number.replace(/\D/g, '').length >= 10,
-      )
-      if (activeContacts.length > 0) {
-        number = activeContacts[0].number.replace(/\D/g, '')
+      const blockContact = getContactForCurrentClickBlock()
+      if (blockContact) {
+        number = blockContact.number.replace(/\D/g, '')
+        useClickRotation = true
       } else {
         const fallback = (footerWhatsapp || '').replace(/\D/g, '')
         if (fallback.length >= 10) {
@@ -71,8 +78,19 @@ export function NotificationBar() {
     }
   }
 
-  const buildHref = () => {
-    if (!number) return undefined
+  // contacts referenciado para reatividade
+  void contacts
+
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    if (!number) return
+    let targetNumber = number
+    if (useClickRotation) {
+      const next = registerClickAndGetContact()
+      if (next) {
+        targetNumber = next.number.replace(/\D/g, '')
+      }
+    }
     let finalMessage = cityMessage || defaultMessage || ''
     const trackingEntries = Object.entries(trackingParams).filter(([, v]) => v && v.length > 0)
     if (trackingEntries.length > 0) {
@@ -80,20 +98,20 @@ export function NotificationBar() {
       finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
     }
     const encoded = encodeURIComponent(finalMessage)
-    return `https://wa.me/${number}${encoded ? `?text=${encoded}` : ''}`
+    const url = `https://wa.me/${targetNumber}${encoded ? `?text=${encoded}` : ''}`
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
-
-  const href = buildHref()
 
   return (
     <div className="bg-gradient-to-r from-[var(--orange-primary)] to-[var(--orange-dark)] text-white px-3 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm flex justify-center items-center flex-wrap gap-x-2 gap-y-1 text-center sm:text-left">
       <span className="leading-snug font-medium">
         {message}
-        {href ? (
+        {number ? (
           <>
             {' '}
             <a
-              href={href}
+              href={`https://wa.me/${number}`}
+              onClick={handleClick}
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2 hover:text-white/90 whitespace-nowrap"
