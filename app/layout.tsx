@@ -43,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className="bg-background">
+    <html lang="pt-BR" className="dark bg-background">
       <head>
         {/* Google Tag Manager */}
         <Script id="gtm-init" strategy="afterInteractive">
