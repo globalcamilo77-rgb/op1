@@ -23,6 +23,7 @@ import { useCartStore } from '@/lib/cart-store'
 import { useAnalyticsStore } from '@/lib/analytics-store'
 import { useCitiesStore, type CityContact, type CityPage } from '@/lib/cities-store'
 import { useAppearanceStore, DEFAULT_APPEARANCE } from '@/lib/appearance-store'
+import { useActiveCityStore } from '@/lib/active-city-store'
 
 function currency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -85,6 +86,13 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
 
   const city = useCitiesStore((state) => state.cities.find((c) => c.slug === slug))
   const getContact = useCitiesStore((state) => state.getContactForCity)
+  const setActiveCity = useActiveCityStore((state) => state.setActiveCity)
+
+  useEffect(() => {
+    if (mounted && city) {
+      setActiveCity(city.slug, city.cityName, city.state)
+    }
+  }, [mounted, city, setActiveCity])
 
   const brand = useAppearanceStore(
     useShallow((state) => ({
@@ -504,6 +512,26 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeProducts.length > 0 && (
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href="/loja"
+                className="inline-flex items-center gap-2 bg-foreground text-background hover:bg-[var(--graphite-soft)] px-6 py-3 rounded-full font-bold text-sm transition-colors"
+              >
+                Ver loja completa
+                <ArrowRight size={16} />
+              </a>
+              <button
+                onClick={handleWhatsApp}
+                disabled={!contact}
+                className="inline-flex items-center gap-2 bg-[var(--success)] hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-3 rounded-full font-bold text-sm transition-colors"
+              >
+                <MessageCircle size={16} />
+                Falar com {safeCity.cityName} no WhatsApp
+              </button>
             </div>
           )}
         </div>

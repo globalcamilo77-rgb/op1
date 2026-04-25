@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
+import { useActiveCityStore } from '@/lib/active-city-store'
 
 export function WhatsAppButton() {
   const pathname = usePathname()
@@ -21,6 +22,7 @@ export function WhatsAppButton() {
   const footerWhatsapp = useAppearanceStore((state) => state.footerWhatsapp)
   const getContactForCity = useCitiesStore((state) => state.getContactForCity)
   const getCityBySlug = useCitiesStore((state) => state.getCityBySlug)
+  const activeCitySlug = useActiveCityStore((state) => state.slug)
 
   useEffect(() => {
     setMounted(true)
@@ -30,9 +32,10 @@ export function WhatsAppButton() {
     return null
   }
 
-  // Verificar se estamos em uma pagina de cidade
+  // Prioridade 1: pagina de cidade (rota direta)
+  // Prioridade 2: cidade ativa salva (lead navegou a partir de uma /cidade/[slug])
   const cityMatch = pathname?.match(/^\/cidade\/([^/]+)/)
-  const citySlug = cityMatch ? cityMatch[1] : null
+  const citySlug = cityMatch ? cityMatch[1] : activeCitySlug
   const city = citySlug ? getCityBySlug(citySlug) : null
 
   let number: string | null = null
