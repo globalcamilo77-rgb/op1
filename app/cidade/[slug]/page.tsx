@@ -6,10 +6,13 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   ArrowRight,
   BadgeCheck,
+  ChevronDown,
   Clock,
+  HeadphonesIcon,
   MapPin,
   MessageCircle,
   PackageCheck,
+  Phone,
   ShieldCheck,
   ShoppingCart,
   Star,
@@ -74,6 +77,7 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
 
   const [mounted, setMounted] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
   useEffect(() => {
     setMounted(true)
     loadFromSupabase()
@@ -97,7 +101,16 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
 
   const featured = useMemo(() => {
     if (!mounted) return []
-    return products.filter((p) => p.active).slice(0, 3)
+    return products.filter((p) => p.active).slice(0, 6)
+  }, [mounted, products])
+
+  const categories = useMemo(() => {
+    if (!mounted) return [] as string[]
+    const set = new Set<string>()
+    products.forEach((p) => {
+      if (p.active && p.category) set.add(p.category)
+    })
+    return Array.from(set).slice(0, 6)
   }, [mounted, products])
 
   useEffect(() => {
@@ -135,6 +148,29 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
     : `${DEFAULT_APPEARANCE.brandName}${DEFAULT_APPEARANCE.brandHighlight}`
 
   const contact: CityContact | null = mounted ? getContact(slug) : null
+
+  const cityFaq = [
+    {
+      q: `Vocês entregam em todos os bairros de ${safeCity.cityName}?`,
+      a: `Sim. Atendemos toda a regiao de ${safeCity.cityName}${safeCity.state ? ` - ${safeCity.state}` : ''} com frete reduzido e prazo medio de 48h. Para zonas rurais ou distantes consulte um atendente pelo WhatsApp.`,
+    },
+    {
+      q: 'Qual o prazo de entrega?',
+      a: 'Pedidos confirmados ate 14h saem no mesmo dia. O prazo medio para sua obra eh de 24 a 48h apos a confirmacao do pagamento.',
+    },
+    {
+      q: 'Posso parcelar a compra?',
+      a: 'Sim. Aceitamos cartao em ate 12x sem juros. Tambem temos 7% de desconto no Pix a vista.',
+    },
+    {
+      q: 'E se eu precisar trocar algum produto?',
+      a: 'Voce tem 7 dias para troca em caso de qualquer problema. O processo eh feito direto pelo WhatsApp e a retirada do produto eh sem custo.',
+    },
+    {
+      q: 'Posso pegar nota fiscal?',
+      a: 'Sim. Toda compra emite nota fiscal eletronica enviada por e-mail. Para pessoa juridica os dados sao usados na emissao.',
+    },
+  ]
 
   const handleWhatsApp = () => {
     if (!contact) return
@@ -195,15 +231,23 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="bg-white text-foreground py-3 px-5 flex items-center justify-between gap-4 flex-wrap border-b border-border shadow-sm">
+    <div className="min-h-screen bg-background text-foreground flex flex-col pb-20 md:pb-0">
+      <header className="bg-white text-foreground py-3 px-5 flex items-center justify-between gap-4 flex-wrap border-b border-border shadow-sm sticky top-0 z-30">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="AlfaConstrução" className="h-12 w-auto object-contain" />
+          <img src="/logo.png" alt={headlineBrand} className="h-12 w-auto object-contain" />
         </div>
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--orange-primary)]">
-          <MapPin size={16} /> {safeCity.cityName}
-          {safeCity.state ? ` - ${safeCity.state}` : ''}
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-[var(--orange-primary)]">
+            <MapPin size={16} /> {safeCity.cityName}
+            {safeCity.state ? ` - ${safeCity.state}` : ''}
+          </div>
+          <a
+            href="/loja"
+            className="text-sm font-semibold text-foreground hover:text-[var(--orange-primary)] transition-colors"
+          >
+            Ver loja
+          </a>
         </div>
       </header>
 
@@ -346,7 +390,32 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
         </div>
       </section>
 
-      <section id="ofertas" className="py-12 px-5">
+      {categories.length > 0 && (
+        <section className="py-12 px-5">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <p className="text-xs uppercase tracking-widest text-[var(--orange-primary)] font-bold">
+                Categorias mais procuradas em {safeCity.cityName}
+              </p>
+              <h2 className="text-3xl font-extrabold mt-2">O que sua obra precisa</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {categories.map((cat) => (
+                <a
+                  key={cat}
+                  href={`/categoria/${encodeURIComponent(cat.toLowerCase().replace(/\s+/g, '-'))}`}
+                  className="bg-card border border-border rounded-xl px-4 py-5 text-center hover:border-[var(--orange-primary)] hover:shadow-md transition-all"
+                >
+                  <PackageCheck className="mx-auto mb-2 text-[var(--orange-primary)]" size={24} />
+                  <p className="text-sm font-semibold">{cat}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section id="ofertas" className="py-12 px-5 bg-secondary">
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto">
             <p className="text-xs uppercase tracking-widest text-[var(--orange-primary)] font-bold">
@@ -358,9 +427,9 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.length === 0 && (
-              <div className="md:col-span-3 text-center text-sm text-muted-foreground py-10 bg-secondary rounded-lg">
+              <div className="md:col-span-2 lg:col-span-3 text-center text-sm text-muted-foreground py-10 bg-card rounded-lg">
                 Cadastre produtos ativos no admin para que aparecam aqui automaticamente.
               </div>
             )}
@@ -410,49 +479,63 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
               </div>
             ))}
           </div>
+
+          {featured.length > 0 && (
+            <div className="mt-8 text-center">
+              <a
+                href="/loja"
+                className="inline-flex items-center gap-2 border-2 border-[var(--orange-primary)] text-[var(--orange-primary)] hover:bg-[var(--orange-primary)] hover:text-white px-5 py-2.5 rounded-full font-bold text-sm transition-colors"
+              >
+                Ver catalogo completo
+                <ArrowRight size={16} />
+              </a>
+            </div>
+          )}
         </div>
       </section>
 
-      <section className="bg-secondary py-12">
-        <div className="max-w-6xl mx-auto px-5">
-          <h2 className="text-2xl font-extrabold text-center mb-8">
+      <section className="py-12 px-5">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-center mb-8">
             Por que {headlineBrand} em {safeCity.cityName}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card p-6 rounded-xl text-center">
+            <div className="bg-card border border-border p-6 rounded-xl text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-[var(--orange-primary)]/15 text-[var(--orange-primary)] flex items-center justify-center mb-3">
                 <Truck />
               </div>
-              <h3 className="font-bold">Entrega local</h3>
+              <h3 className="font-bold">Entrega local em {safeCity.cityName}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Logistica dedicada para {safeCity.cityName} e regiao.
+                Logistica dedicada para {safeCity.cityName} e regiao com prazo medio de 48h.
               </p>
             </div>
-            <div className="bg-card p-6 rounded-xl text-center">
+            <div className="bg-card border border-border p-6 rounded-xl text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-[var(--orange-primary)]/15 text-[var(--orange-primary)] flex items-center justify-center mb-3">
                 <PackageCheck />
               </div>
               <h3 className="font-bold">Garantia total</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Trocas em ate 7 dias se houver qualquer problema.
+                Trocas em ate 7 dias se houver qualquer problema com o material.
               </p>
             </div>
-            <div className="bg-card p-6 rounded-xl text-center">
+            <div className="bg-card border border-border p-6 rounded-xl text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-[var(--orange-primary)]/15 text-[var(--orange-primary)] flex items-center justify-center mb-3">
                 <ShieldCheck />
               </div>
               <h3 className="font-bold">Pagamento seguro</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Cartao, Pix ou boleto. 12x sem juros e Pix com desconto.
+                Cartao, Pix ou boleto. 12x sem juros e Pix com 7% de desconto.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-12 px-5">
+      <section className="bg-secondary py-12 px-5">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-extrabold text-center mb-8">Quem ja comprou aprova</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-center mb-8">
+            Quem ja comprou em {safeCity.cityName} aprova
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TESTIMONIALS.map((t) => (
               <div key={t.name} className="bg-card border border-border rounded-xl p-5">
@@ -464,7 +547,9 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
                 <p className="text-sm leading-relaxed text-foreground">&ldquo;{t.text}&rdquo;</p>
                 <div className="mt-4 text-xs">
                   <p className="font-semibold">{t.name}</p>
-                  <p className="text-muted-foreground">{t.role}</p>
+                  <p className="text-muted-foreground">
+                    {t.role} - {safeCity.cityName}
+                  </p>
                 </div>
               </div>
             ))}
@@ -472,10 +557,79 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
         </div>
       </section>
 
+      <section className="py-12 px-5">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <p className="text-xs uppercase tracking-widest text-[var(--orange-primary)] font-bold">
+              Tire suas duvidas
+            </p>
+            <h2 className="text-2xl md:text-3xl font-extrabold mt-2">
+              Perguntas frequentes em {safeCity.cityName}
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {cityFaq.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full text-left bg-card border border-border rounded-xl px-5 py-4 hover:border-[var(--orange-primary)] transition-colors"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <span className="font-semibold text-sm md:text-base">{item.q}</span>
+                  <ChevronDown
+                    size={18}
+                    className={`flex-shrink-0 text-[var(--orange-primary)] transition-transform ${
+                      openFaq === idx ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+                {openFaq === idx && (
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[var(--graphite)] text-white py-12 px-5">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-[var(--orange-primary)] font-bold">
+              Atendimento
+            </p>
+            <h3 className="text-2xl font-extrabold mt-2">Suporte direto em {safeCity.cityName}</h3>
+            <p className="text-sm text-white/80 mt-2 leading-relaxed">
+              Time local que conhece a regiao, os bairros e o que sua obra precisa. Sem
+              call center, sem demora.
+            </p>
+          </div>
+          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <HeadphonesIcon className="text-[var(--orange-primary)]" size={20} />
+              <p className="text-xs text-white/70 mt-2">Atendimento</p>
+              <p className="font-semibold text-sm">Seg a Sab, 8h-18h</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <MapPin className="text-[var(--orange-primary)]" size={20} />
+              <p className="text-xs text-white/70 mt-2">Regiao</p>
+              <p className="font-semibold text-sm">
+                {safeCity.cityName}
+                {safeCity.state ? ` - ${safeCity.state}` : ''}
+              </p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <Phone className="text-[var(--orange-primary)]" size={20} />
+              <p className="text-xs text-white/70 mt-2">Contato</p>
+              <p className="font-semibold text-sm">WhatsApp</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-[var(--orange-primary)] text-white py-12 px-5 text-center">
-        <h2 className="text-3xl font-extrabold">
-          Pronto pra comecar em {safeCity.cityName}?
-        </h2>
+        <h2 className="text-3xl font-extrabold">Pronto pra comecar em {safeCity.cityName}?</h2>
         <p className="text-sm md:text-base mt-2 opacity-90 max-w-xl mx-auto">
           Fale com um especialista agora pelo WhatsApp ou navegue pelo catalogo completo.
         </p>
@@ -489,7 +643,7 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
             Atendimento pelo WhatsApp
           </button>
           <a
-            href="/"
+            href="/loja"
             className="inline-flex items-center gap-2 bg-white text-[var(--orange-dark)] hover:bg-white/90 px-6 py-3 rounded-full font-bold text-sm"
           >
             Ver loja completa
@@ -501,6 +655,25 @@ export default function CityLandingPage({ params }: { params: Promise<Params> })
       <footer className="bg-[var(--graphite)] text-white/70 py-6 text-center text-xs">
         &copy; 2026 - {headlineBrand} em {safeCity.cityName}. Todos os direitos reservados.
       </footer>
+
+      {/* Sticky CTA mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-3 flex items-center gap-2 shadow-lg">
+        <a
+          href="#ofertas"
+          className="flex-1 inline-flex items-center justify-center gap-2 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white font-bold py-3 rounded-md text-sm"
+        >
+          <ShoppingCart size={16} />
+          Ver ofertas
+        </a>
+        <button
+          onClick={handleWhatsApp}
+          disabled={!contact}
+          className="flex-1 inline-flex items-center justify-center gap-2 bg-[var(--success)] hover:bg-green-600 disabled:opacity-60 text-white font-bold py-3 rounded-md text-sm"
+        >
+          <MessageCircle size={16} />
+          WhatsApp
+        </button>
+      </div>
     </div>
   )
 }
