@@ -18,6 +18,8 @@ export interface OrderInput {
   items: CartItem[]
   tracking?: Record<string, string>
   attendantName?: string | null
+  pixTransactionId?: string | null
+  customerIp?: string | null
 }
 
 export async function createOrder(order: OrderInput): Promise<string | null> {
@@ -54,6 +56,7 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
       customer_email: order.customerEmail ?? null,
       customer_phone: order.customerPhone ?? null,
       customer_document: order.customerDocument ?? null,
+      customer_ip: order.customerIp ?? null,
       total: order.total,
       payment_method: order.paymentMethod ?? null,
       status: order.status ?? 'pending',
@@ -61,6 +64,7 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
       notes: notesPayload,
       tracking: trackingObj,
       attendant_name: order.attendantName ?? null,
+      pix_transaction_id: order.pixTransactionId ?? null,
     })
     .select('id')
     .single()
