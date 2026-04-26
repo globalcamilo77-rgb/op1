@@ -120,7 +120,10 @@ function ObrigadoContent() {
     setMounted(true)
   }, [])
 
-  // Buscar pedido e disparar evento purchase
+  // Buscar pedido e disparar evento purchase. Faz polling a cada 4s
+  // enquanto o status nao for "paid", por ate 30 minutos. Assim, quando a
+  // Koliseu confirma o pagamento via webhook, a /obrigado se atualiza
+  // automaticamente e dispara a conversao no Google Ads / GA4.
   useEffect(() => {
     if (!mounted || !orderId) {
       setLoading(false)
@@ -128,10 +131,16 @@ function ObrigadoContent() {
     }
 
     let cancelled = false
+    let pollTimer: ReturnType<typeof setTimeout> | null = null
+    const startedAt = Date.now()
+    const maxPollMs = 30 * 60 * 1000 // 30 minutos
+    const pollIntervalMs = 4000
 
     const fetchAndTrack = async () => {
       try {
-        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`)
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+          cache: 'no-store',
+        })
         if (!res.ok) {
           if (!cancelled) setLoading(false)
           return
@@ -148,47 +157,98 @@ function ObrigadoContent() {
         setOrder(fetched)
         setLoading(false)
 
-        // Tracking purchase apenas uma vez por pedido
-        const trackedKey = `purchase_tracked_${fetched.id}`
-        if (typeof window !== 'undefined' && window.sessionStorage.getItem(trackedKey)) {
+        // Tracking purchase apenas quando o pedido foi efetivamente PAGO
+        // (status paid/completed). Para PIX pendente nao disparamos para nao
+        // contaminar o painel de conversoes do Ads/GA4.
+        if (!isPaid(fetched.status)) {
+          // Reagenda polling enquanto nao esgotar o tempo limite
+          if (Date.now() - startedAt < maxPollMs && !cancelled) {
+            pollTimer = setTimeout(fetchAndTrack, pollIntervalMs)
+          }
           return
         }
+
+        // Apenas uma vez por pedido (localStorage = persiste mesmo se o
+        // cliente recarregar ou voltar pela URL).
+        const trackedKey = `purchase_tracked_${fetched.id}`
+        if (typeof window === 'undefined') return
+        if (window.localStorage.getItem(trackedKey)) return
 
         const value = Number(fetched.total) || 0
         const transactionId = String(fetched.id)
         const orderCurrency = 'BRL'
 
-        if (typeof window !== 'undefined') {
-          window.dataLayer = window.dataLayer || []
-          window.dataLayer.push({
-            event: 'purchase',
-            ecommerce: {
+        // Items detalhados para Enhanced Ecommerce (GA4 + Ads remarketing)
+        const trackedItems = parseItems(fetched.items).map((it, idx) => ({
+          item_id: it.product_id ?? `item-${idx}`,
+          item_name: it.name ?? 'Produto',
+          item_brand: it.brand ?? undefined,
+          price: Number(it.unit_price) || 0,
+          quantity: Number(it.quantity) || 1,
+        }))
+
+        // GTM dataLayer (GA4 e qualquer outra tag conectada)
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({
+          event: 'purchase',
+          ecommerce: {
+            transaction_id: transactionId,
+            value,
+            currency: orderCurrency,
+            payment_type: fetched.payment_method || 'pix',
+            items: trackedItems,
+          },
+        })
+
+        // GA4 direto via gtag (caso GTM nao esteja com tag de purchase)
+        if (typeof window.gtag === 'function') {
+          window.gtag('event', 'purchase', {
+            transaction_id: transactionId,
+            value,
+            currency: orderCurrency,
+            items: trackedItems,
+          })
+
+          // Google Ads — Conversion event. Sem o label correto a conversao
+          // nao e contabilizada no painel do Ads, so aparece no GA4.
+          const adsId = 'AW-17985777423'
+          const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL || ''
+          if (conversionLabel) {
+            window.gtag('event', 'conversion', {
+              send_to: `${adsId}/${conversionLabel}`,
               transaction_id: transactionId,
               value,
               currency: orderCurrency,
-              payment_type: fetched.payment_method || 'pix',
-            },
-          })
-
-          if (typeof window.gtag === 'function') {
-            window.gtag('event', 'purchase', {
+            })
+          } else {
+            // Fallback: pelo menos sinaliza que houve uma conversao para o
+            // remarketing do Ads aprender que esse usuario comprou.
+            window.gtag('event', 'conversion', {
+              send_to: adsId,
               transaction_id: transactionId,
               value,
               currency: orderCurrency,
             })
           }
-
-          window.sessionStorage.setItem(trackedKey, '1')
         }
+
+        window.localStorage.setItem(trackedKey, '1')
       } catch (err) {
         console.error('[obrigado] erro ao buscar pedido:', err)
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          // Tenta de novo em 8s caso seja erro de rede transitorio
+          if (Date.now() - startedAt < maxPollMs) {
+            pollTimer = setTimeout(fetchAndTrack, pollIntervalMs * 2)
+          }
+        }
       }
     }
 
     fetchAndTrack()
     return () => {
       cancelled = true
+      if (pollTimer) clearTimeout(pollTimer)
     }
   }, [mounted, orderId])
 
