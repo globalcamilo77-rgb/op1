@@ -360,6 +360,8 @@ export default function CheckoutPage() {
       items: visibleItems,
       tracking: trackingParams,
       pixTransactionId: gatewayCharge?.id || null,
+      // Salvamos o pixOrderId como externalReference para correlacao com a Koliseu
+      externalReference: paymentMethod === 'pix' ? pixOrderId : null,
     })
     setDbOrderId(newOrderId)
 

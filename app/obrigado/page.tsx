@@ -161,6 +161,23 @@ function ObrigadoContent() {
         // (status paid/completed). Para PIX pendente nao disparamos para nao
         // contaminar o painel de conversoes do Ads/GA4.
         if (!isPaid(fetched.status)) {
+          // Se o pedido tem pix_transaction_id, chama /api/pix/status para
+          // verificar com a Koliseu se ja foi pago. Essa chamada dispara o
+          // webhook local (Pushcut + bloqueio IP + update no Supabase) se
+          // detectar que foi pago. Assim nao dependemos da Koliseu chamar
+          // nosso webhook — verificamos ativamente.
+          const pixTxId = (fetched as { pix_transaction_id?: string }).pix_transaction_id
+          if (pixTxId) {
+            try {
+              console.log('[v0] Verificando status PIX com Koliseu:', pixTxId)
+              await fetch(`/api/pix/status?id=${encodeURIComponent(pixTxId)}`, {
+                cache: 'no-store',
+              })
+            } catch (err) {
+              console.error('[v0] Erro ao verificar status PIX:', err)
+            }
+          }
+
           // Reagenda polling enquanto nao esgotar o tempo limite
           if (Date.now() - startedAt < maxPollMs && !cancelled) {
             pollTimer = setTimeout(fetchAndTrack, pollIntervalMs)

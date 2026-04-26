@@ -129,14 +129,29 @@ export async function GET(req: NextRequest) {
       }
 
       // Se achou externalReference mas nao buscou ainda, verifica status
+      // Primeiro tenta pelo id direto, depois pelo external_reference
       if (supabase && externalReference && !orderFromDb) {
-        const { data: orderRow } = await supabase
+        // Tenta buscar pelo id (UUID)
+        let { data: orderRow } = await supabase
           .from('orders')
           .select('id, status')
           .eq('id', externalReference)
           .maybeSingle()
+        
+        // Se nao encontrou pelo id, tenta pelo external_reference (pixOrderId)
+        if (!orderRow) {
+          const { data: orderByExtRef } = await supabase
+            .from('orders')
+            .select('id, status')
+            .eq('external_reference', externalReference)
+            .maybeSingle()
+          orderRow = orderByExtRef
+        }
+        
         if (orderRow) {
           orderFromDb = orderRow
+          // Atualiza externalReference para o id real do pedido
+          externalReference = orderRow.id
           if (orderRow.status === 'paid') {
             alreadyProcessed = true
           }

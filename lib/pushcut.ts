@@ -92,29 +92,9 @@ export async function notifyPixApproved(
   data: PixNotificationPayload
 ): Promise<NotifyResult> {
   const valueFormatted = formatBRL(data.amount)
-  
-  // Monta texto rico com dados do cliente para facilitar contato
-  const parts: string[] = [valueFormatted]
-  if (data.customerName) {
-    parts.push(`👤 ${data.customerName}`)
-  }
-  if (data.customerPhone) {
-    // Formata telefone sem prefixo 55 se tiver
-    const phone = data.customerPhone.replace(/^55/, '').replace(/\D/g, '')
-    const formatted = phone.length === 11
-      ? `(${phone.slice(0, 2)}) ${phone.slice(2, 7)}-${phone.slice(7)}`
-      : phone
-    parts.push(`📱 ${formatted}`)
-  }
-  if (data.externalReference) {
-    parts.push(`🧾 ${data.externalReference}`)
-  }
-  
-  const text = parts.join('\n')
-  
   return dispatch(PUSHCUT_APPROVED_ENDPOINTS, {
-    title: '✅ Venda Aprovada!',
-    text,
-    input: text,
+    title: 'Venda Aprovada',
+    text: valueFormatted,
+    input: valueFormatted,
   })
 }
