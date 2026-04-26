@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { notifyPixApproved } from '@/lib/pushcut'
+import { notifyPixApproved, notifyPixGenerated } from '@/lib/pushcut'
+import { addIpBlock } from '@/lib/supabase-ip-blocks'
+import { logPixWebhook } from '@/lib/supabase-pix-webhook'
 
 export const runtime = 'nodejs'
 
-// Criar cliente Supabase com service role
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -12,101 +13,167 @@ function getSupabase() {
   return createClient(url, key)
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    
-    // Webhook da Koliseu - verificar status de pagamento
-    const { event, data } = body
-    
-    if (event === 'payment.confirmed' || event === 'payment.paid') {
-      const supabase = getSupabase()
-      
-      if (supabase && data?.externalReference) {
-        // Buscar o pedido pelo externalReference (orderId)
-        const { data: order } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', data.externalReference)
-          .single()
-        
-        if (order) {
-          // Atualizar status do pedido para pago
-          await supabase
-            .from('orders')
-            .update({ 
-              status: 'paid',
-              paid_at: new Date().toISOString(),
-              pix_transaction_id: data.id
-            })
-            .eq('id', data.externalReference)
-          
-          // Bloquear IP do cliente apos pagamento
-          if (order.customer_ip) {
-            await supabase
-              .from('blocked_ips')
-              .upsert({
-                ip: order.customer_ip,
-                reason: 'purchase_completed',
-                order_id: order.id,
-                blocked_at: new Date().toISOString()
-              }, {
-                onConflict: 'ip'
-              })
-          }
+function getClientIp(request: NextRequest): string {
+  const realIp = request.headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
+  const fwd = request.headers.get('x-forwarded-for')
+  if (fwd) return fwd.split(',')[0].trim()
+  return ''
+}
 
-          // Disparar notificacao de Pix Aprovado para os 3 dispositivos com valor real
-          const approvedAmount =
-            typeof order.total === 'number' && order.total > 0
-              ? order.total
-              : typeof data?.amount === 'number'
-                ? data.amount / 100
-                : 0
-          const notifyResult = await notifyPixApproved({
-            amount: approvedAmount,
-            customerName: order.customer_name ?? undefined,
-            customerPhone: order.customer_phone ?? undefined,
-            customerDocument: order.customer_document ?? undefined,
-            externalReference: order.id,
-            paymentId: data?.id,
-          })
-          console.log('[v0] Pushcut Pix aprovado:', notifyResult)
-        }
-      }
-      
-      return NextResponse.json({ received: true })
+interface WebhookBody {
+  event?: string
+  data?: {
+    id?: string
+    externalReference?: string
+    amount?: number
+    customerIp?: string
+    customer?: {
+      name?: string
+      email?: string
+      phone?: string
     }
-    
-    return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error('Webhook error:', error)
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
+}
+
+export async function POST(request: NextRequest) {
+  const requestIp = getClientIp(request)
+  const userAgent = request.headers.get('user-agent') || ''
+
+  let body: WebhookBody = {}
+  try {
+    body = (await request.json()) as WebhookBody
+  } catch {
+    body = {}
+  }
+
+  const event = body.event || ''
+  const data = body.data || {}
+  const supabase = getSupabase()
+
+  // Identificar tipo do evento e normalizar
+  const isApproved = event === 'payment.confirmed' || event === 'payment.paid' || event === 'pix.approved'
+  const isGenerated = event === 'payment.created' || event === 'pix.generated'
+
+  // Buscar pedido relacionado (se houver)
+  let order: {
+    id: string
+    customer_ip: string | null
+    customer_name: string | null
+    customer_phone: string | null
+    customer_email?: string | null
+    customer_document: string | null
+    total: number | null
+  } | null = null
+
+  if (supabase && data.externalReference) {
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('id, customer_ip, customer_name, customer_phone, customer_email, customer_document, total')
+      .eq('id', data.externalReference)
+      .maybeSingle()
+    order = orderData as typeof order
+  }
+
+  // IP do cliente: prioriza o que vem do pedido, depois o do request, depois o do payload
+  const clientIp = order?.customer_ip || data.customerIp || requestIp || ''
+
+  let ipBlockId: string | null = null
+  let pushcutResult: unknown = null
+
+  try {
+    if (isApproved) {
+      // 1) Atualiza status do pedido
+      if (supabase && order) {
+        await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            pix_transaction_id: data.id ?? null,
+          })
+          .eq('id', order.id)
+      }
+
+      // 2) Bloqueia IP por 1 hora (auto)
+      if (clientIp) {
+        const block = await addIpBlock({
+          ip: clientIp,
+          reason: 'pix_aprovado',
+          manual: false,
+          expiresInMinutes: 60,
+          metadata: {
+            orderId: order?.id ?? null,
+            pixId: data.id ?? null,
+            event,
+          },
+        })
+        ipBlockId = block?.id ?? null
+      }
+
+      // 3) Notificacao Pushcut
+      const approvedAmount =
+        typeof order?.total === 'number' && order.total > 0
+          ? order.total
+          : typeof data.amount === 'number'
+            ? data.amount / 100
+            : 0
+      pushcutResult = await notifyPixApproved({
+        amount: approvedAmount,
+        customerName: order?.customer_name ?? data.customer?.name ?? undefined,
+        customerPhone: order?.customer_phone ?? data.customer?.phone ?? undefined,
+        customerDocument: order?.customer_document ?? undefined,
+        externalReference: order?.id ?? data.externalReference,
+        paymentId: data.id,
+      })
+    } else if (isGenerated) {
+      pushcutResult = await notifyPixGenerated({
+        amount: typeof data.amount === 'number' ? data.amount / 100 : 0,
+        customerName: data.customer?.name ?? undefined,
+        customerPhone: data.customer?.phone ?? undefined,
+        externalReference: data.externalReference,
+        paymentId: data.id,
+      })
+    }
+  } catch (error) {
+    console.error('[pix/webhook] erro processando evento:', error)
+  }
+
+  // Sempre loga o webhook recebido
+  await logPixWebhook({
+    eventType: isApproved ? 'pix_aprovado' : isGenerated ? 'pix_gerado' : event || 'desconhecido',
+    status: 'processed',
+    payload: { body, pushcutResult },
+    clientIp: clientIp || null,
+    userAgent,
+    pixId: data.id ?? null,
+    amount: typeof data.amount === 'number' ? data.amount / 100 : null,
+    customerName: order?.customer_name ?? data.customer?.name ?? null,
+    customerEmail: order?.customer_email ?? data.customer?.email ?? null,
+    customerPhone: order?.customer_phone ?? data.customer?.phone ?? null,
+    ipBlockId,
+  })
+
+  return NextResponse.json({ received: true, blocked: Boolean(ipBlockId), event })
 }
 
 // GET para verificar status do pagamento (polling do frontend)
 export async function GET(request: NextRequest) {
   const orderId = request.nextUrl.searchParams.get('orderId')
-  
   if (!orderId) {
     return NextResponse.json({ error: 'orderId required' }, { status: 400 })
   }
-  
   const supabase = getSupabase()
-  
   if (!supabase) {
     return NextResponse.json({ status: 'pending' })
   }
-  
   const { data: order } = await supabase
     .from('orders')
     .select('status, paid_at')
     .eq('id', orderId)
     .single()
-  
   if (order?.status === 'paid') {
     return NextResponse.json({ status: 'paid', paidAt: order.paid_at })
   }
-  
   return NextResponse.json({ status: 'pending' })
 }
