@@ -9,9 +9,18 @@ import { AnalyticsTracker } from '@/components/store/analytics-tracker'
 import { WhatsAppButton } from '@/components/store/whatsapp-button'
 import { ActiveCityBanner } from '@/components/store/active-city-banner'
 import { TrackingParamsCapture } from '@/components/tracking-params-capture'
+import { StoresHydrator } from '@/components/stores-hydrator'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+  display: 'swap',
+})
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'AlfaConstrução - Melhores orcamentos com entrega rapida',
@@ -43,7 +52,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className="bg-background">
+    <html
+      lang="pt-BR"
+      className={`${geistSans.variable} ${geistMono.variable} bg-background`}
+    >
       <head>
         {/* Google Tag Manager */}
         <Script id="gtm-init" strategy="afterInteractive">
@@ -54,6 +66,19 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-PNMM4P57');`}
         </Script>
         {/* End Google Tag Manager */}
+
+        {/* Google Ads (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17985777423"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'AW-17985777423');`}
+        </Script>
+        {/* End Google Ads */}
       </head>
       <body className="font-sans antialiased">
         {/* Google Tag Manager (noscript) */}
@@ -67,6 +92,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
+        <StoresHydrator />
         <AppearanceProvider />
         <AnalyticsTracker />
         <Suspense fallback={null}>

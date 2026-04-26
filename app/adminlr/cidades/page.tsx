@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -71,9 +71,24 @@ export default function AdminCidadesPage() {
   const addContact = useCitiesStore((state) => state.addContact)
   const updateContact = useCitiesStore((state) => state.updateContact)
   const removeContact = useCitiesStore((state) => state.removeContact)
+  const loadFromSupabase = useCitiesStore((state) => state.loadFromSupabase)
+  const syncAllToSupabase = useCitiesStore((state) => state.syncAllToSupabase)
+  const deleteFromSupabase = useCitiesStore((state) => state.deleteFromSupabase)
 
   const [hydrated, setHydrated] = useState(false)
-  useEffect(() => setHydrated(true), [])
+  useEffect(() => {
+    setHydrated(true)
+    loadFromSupabase()
+  }, [loadFromSupabase])
+
+  // Auto-sync com Supabase: cada mudanca em cities dispara um push debounced (600ms).
+  useEffect(() => {
+    if (!hydrated) return
+    const timeoutId = window.setTimeout(() => {
+      syncAllToSupabase()
+    }, 600)
+    return () => window.clearTimeout(timeoutId)
+  }, [cities, hydrated, syncAllToSupabase])
 
   useEffect(() => {
     if (user && user.role !== 'superadmin') router.push('/adminlr')
@@ -292,6 +307,7 @@ export default function AdminCidadesPage() {
               onRemove={() => {
                 if (!window.confirm(`Remover ${city.cityName} (${city.slug})?`)) return
                 removeCity(city.id)
+                deleteFromSupabase(city.id)
               }}
               onAddContact={(contact) => addContact(city.id, contact)}
               onUpdateContact={(contactId, updates) => updateContact(city.id, contactId, updates)}
@@ -533,9 +549,10 @@ function CityCard({
         </form>
 
         <p className="text-[11px] text-muted-foreground mt-2">
-          A rotacao troca o numero a cada{' '}
-          <strong>{city.rotationIntervalMinutes}</strong> minutos, de forma deterministica
-          (mesmo lead que recarrega a pagina cai no mesmo numero).
+          Cidades <strong>nao rotacionam</strong>: o cliente que entra nesta LP cai sempre no
+          primeiro numero ativo cadastrado aqui. Se voce quiser distribuir conversas entre
+          varios atendentes com rotacao automatica, use o painel <em>WhatsApp Globais</em>
+          em /adminlr/atendimento.
         </p>
       </div>
 
@@ -562,27 +579,12 @@ function CityCard({
                 }
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-3">
               <label className="text-xs text-muted-foreground">Slug da URL</label>
               <input
                 className={`${inputClass} font-mono`}
                 value={draft.slug}
                 onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Rotacao (min)</label>
-              <input
-                type="number"
-                min={1}
-                className={inputClass}
-                value={draft.rotationIntervalMinutes}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    rotationIntervalMinutes: Number(event.target.value) || 1,
-                  })
-                }
               />
             </div>
           </div>

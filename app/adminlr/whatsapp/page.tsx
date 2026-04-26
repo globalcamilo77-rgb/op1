@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -19,16 +19,33 @@ export default function AdminWhatsAppPage() {
     removeContact,
     setDefaultMessage,
     setRotationIntervalMinutes,
+    loadFromSupabase,
+    syncAllToSupabase,
   } = useWhatsAppStore()
 
   const [label, setLabel] = useState('')
   const [number, setNumber] = useState('')
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    setHydrated(true)
+    loadFromSupabase()
+  }, [loadFromSupabase])
 
   useEffect(() => {
     if (user?.role !== 'superadmin') {
       router.push('/adminlr')
     }
   }, [user, router])
+
+  // Sync debounced toda vez que contacts mudam
+  useEffect(() => {
+    if (!hydrated) return
+    const timeoutId = window.setTimeout(() => {
+      syncAllToSupabase()
+    }, 600)
+    return () => window.clearTimeout(timeoutId)
+  }, [contacts, hydrated, syncAllToSupabase])
 
   if (user?.role !== 'superadmin') {
     return null

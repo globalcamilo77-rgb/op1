@@ -4,11 +4,12 @@ import { MessageCircle, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useShallow } from 'zustand/react/shallow'
-import { useWhatsAppStore, type WhatsAppContact } from '@/lib/whatsapp-store'
+import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
 import { useTrackingParamsStore } from '@/lib/tracking-params-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 interface AvailableContact {
   id: string
@@ -16,6 +17,10 @@ interface AvailableContact {
   number: string
   source: 'city' | 'global'
 }
+
+// Sem fallback hardcoded: se nao houver contatos cadastrados em
+// /adminlr/whatsapp, /adminlr/cidades ou no rodape de aparencia, o botao
+// simplesmente nao aparece. Cadastre ao menos um numero no SuperAdmin para exibi-lo.
 
 export function WhatsAppButton() {
   const pathname = usePathname()
@@ -66,38 +71,57 @@ export function WhatsAppButton() {
     return city && city.active ? city : null
   }, [mounted, pathname, activeCitySlug, getCityBySlug])
 
-  // Lista todos os contatos disponiveis: contatos da cidade ativa + contatos globais ativos.
+  // Lista todos os contatos disponiveis: contatos da cidade ativa (se em /cidade/[slug])
+  // + contatos globais + contatos de todas as outras cidades ativas como opcao secundaria.
   const availableContacts = useMemo<AvailableContact[]>(() => {
     if (!mounted) return []
     const items: AvailableContact[] = []
     const seen = new Set<string>()
 
-    const push = (raw: WhatsAppContact, source: 'city' | 'global') => {
+    const push = (
+      raw: { id?: string; label?: string; number?: string },
+      source: 'city' | 'global',
+      labelOverride?: string,
+    ) => {
       const digits = (raw.number || '').replace(/\D/g, '')
       if (digits.length < 10) return
       if (seen.has(digits)) return
       seen.add(digits)
       items.push({
         id: raw.id || `${source}-${digits}`,
-        label: raw.label || (source === 'city' ? 'Atendimento local' : 'WhatsApp'),
+        label: labelOverride || raw.label || (source === 'city' ? 'Atendimento local' : 'WhatsApp'),
         number: digits,
         source,
       })
     }
 
-    // 1) Contatos da cidade no topo (se houver)
+    // 1) Contatos da cidade ativa primeiro (so quando estamos em /cidade/[slug])
     if (cityFromPath) {
       for (const c of cityFromPath.contacts || []) {
         if (c.active) push(c, 'city')
       }
     }
 
-    // 2) Contatos globais
+    // 2) Contatos globais cadastrados em /adminlr/whatsapp
     for (const c of contacts) {
       if (c.active) push(c, 'global')
     }
 
-    // 3) Fallback: numero do rodape se nada cadastrado
+    // 3) Contatos de TODAS as outras cidades ativas (na home/loja viram a unica fonte)
+    for (const otherCity of cities) {
+      if (!otherCity.active) continue
+      if (cityFromPath && otherCity.slug === cityFromPath.slug) continue
+      for (const c of otherCity.contacts || []) {
+        if (!c.active) continue
+        push(
+          c,
+          'global',
+          `${c.label || 'Atendimento'} - ${otherCity.cityName}`,
+        )
+      }
+    }
+
+    // 4) Fallback do rodape (se cadastrado em /adminlr/aparencia)
     if (items.length === 0) {
       const fallback = (footerWhatsapp || '').replace(/\D/g, '')
       if (fallback.length >= 10) {
@@ -110,25 +134,6 @@ export function WhatsAppButton() {
       }
     }
 
-    // Em paginas de cidade tambem listamos as outras cidades como opcao secundaria
-    if (cityFromPath) {
-      for (const otherCity of cities) {
-        if (!otherCity.active || otherCity.slug === cityFromPath.slug) continue
-        for (const c of otherCity.contacts || []) {
-          if (!c.active) continue
-          const digits = (c.number || '').replace(/\D/g, '')
-          if (digits.length < 10 || seen.has(digits)) continue
-          seen.add(digits)
-          items.push({
-            id: c.id || `city-${otherCity.slug}-${digits}`,
-            label: `${c.label || 'Atendimento'} - ${otherCity.cityName}`,
-            number: digits,
-            source: 'global',
-          })
-        }
-      }
-    }
-
     return items
   }, [mounted, cityFromPath, contacts, footerWhatsapp, cities])
 
@@ -136,7 +141,7 @@ export function WhatsAppButton() {
     return null
   }
 
-  const buildHref = (contact: AvailableContact) => {
+  const buildMessage = (contact: AvailableContact) => {
     let finalMessage =
       (contact.source === 'city' && cityFromPath?.defaultMessage) || defaultMessage || ''
     const trackingEntries = Object.entries(trackingParams).filter(([, v]) => v && v.length > 0)
@@ -144,21 +149,21 @@ export function WhatsAppButton() {
       const trackingTag = trackingEntries.map(([k, v]) => `${k}=${v}`).join(' | ')
       finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
     }
-    const encodedMessage = encodeURIComponent(finalMessage)
-    return `https://wa.me/${contact.number}${encodedMessage ? `?text=${encodedMessage}` : ''}`
+    return finalMessage
   }
 
   // Quando ha 1 unico contato, comportamento "click direto" (igual antes).
   const handleMainClick = () => {
     if (availableContacts.length === 1) {
-      window.open(buildHref(availableContacts[0]), '_blank', 'noopener,noreferrer')
+      const c = availableContacts[0]
+      openWhatsApp(c.number, buildMessage(c))
       return
     }
     setOpen((prev) => !prev)
   }
 
   const handleContactClick = (contact: AvailableContact) => {
-    window.open(buildHref(contact), '_blank', 'noopener,noreferrer')
+    openWhatsApp(contact.number, buildMessage(contact))
     setOpen(false)
   }
 

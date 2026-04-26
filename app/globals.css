@@ -104,8 +104,10 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+    Consolas, 'Liberation Mono', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -148,35 +150,65 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    background-color: var(--background);
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
-/* Marquee (barra de promocoes deslizante no topo) */
+/* Marquee (barra de promocoes deslizante no topo).
+   Usa translate3d para forcar GPU em mobile e width: max-content
+   para garantir que o track tenha sempre largura suficiente para animar.
+   NAO desligamos a animacao em prefers-reduced-motion porque muitos
+   clientes iOS tem essa flag ligada por padrao — apenas desaceleramos. */
 @keyframes marquee-slide {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
 .marquee-track {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  width: max-content;
   white-space: nowrap;
-  animation: marquee-slide 30s linear infinite;
+  animation: marquee-slide 25s linear infinite;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+.marquee-track > span {
+  flex: 0 0 auto;
 }
 
 .marquee-track:hover {
   animation-play-state: paused;
 }
 
+/* Mobile: roda mais rapido para nao parecer parado em telas estreitas */
+@media (max-width: 640px) {
+  .marquee-track {
+    animation-duration: 18s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
-    animation: none;
+    animation-duration: 60s;
   }
 }

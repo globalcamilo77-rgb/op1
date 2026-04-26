@@ -16,6 +16,8 @@ interface WhatsAppState {
   clicksPerRotation: number
   /** Contador acumulado de cliques no botao do WhatsApp (persistido por dispositivo). */
   clickCount: number
+  hydrated: boolean
+  syncing: boolean
   addContact: (contact: Omit<WhatsAppContact, 'id'>) => void
   updateContact: (id: string, updates: Partial<Omit<WhatsAppContact, 'id'>>) => void
   removeContact: (id: string) => void
@@ -28,9 +30,11 @@ interface WhatsAppState {
   getContactForCurrentClickBlock: () => WhatsAppContact | null
   /** Incrementa o contador e retorna o contato ativo correspondente ao novo bloco (chamar no onClick). */
   registerClickAndGetContact: () => WhatsAppContact | null
+  /** Carrega contatos do Supabase. */
+  loadFromSupabase: () => Promise<void>
+  /** Persiste todos os contatos atuais no Supabase. */
+  syncAllToSupabase: () => Promise<void>
 }
-
-const SEED_PHANTOM_NUMBERS = new Set(['551145724545'])
 
 const sanitizeNumber = (value: string) => value.replace(/\D/g, '')
 
@@ -47,6 +51,8 @@ export const useWhatsAppStore = create<WhatsAppState>()(
       rotationIntervalMinutes: 15,
       clicksPerRotation: 10,
       clickCount: 0,
+      hydrated: false,
+      syncing: false,
 
       addContact: (contact) =>
         set((state) => ({
@@ -115,6 +121,39 @@ export const useWhatsAppStore = create<WhatsAppState>()(
         set({ clickCount: newCount })
         return activeContacts[blockIndex]
       },
+
+      loadFromSupabase: async () => {
+        if (typeof window === 'undefined') return
+        if (get().syncing) return
+        set({ syncing: true })
+        try {
+          const res = await fetch('/api/whatsapp', { cache: 'no-store' })
+          if (!res.ok) throw new Error(`status ${res.status}`)
+          const data = (await res.json()) as { contacts?: WhatsAppContact[] }
+          if (Array.isArray(data.contacts)) {
+            set({ contacts: data.contacts, hydrated: true })
+          } else {
+            set({ hydrated: true })
+          }
+        } catch (error) {
+          console.error('[whatsapp-store] loadFromSupabase falhou:', error)
+        } finally {
+          set({ syncing: false })
+        }
+      },
+
+      syncAllToSupabase: async () => {
+        const contacts = get().contacts
+        try {
+          await fetch('/api/whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contacts }),
+          })
+        } catch (error) {
+          console.error('[whatsapp-store] syncAllToSupabase falhou:', error)
+        }
+      },
     }),
     {
       name: 'alfaconstrucao-whatsapp',
@@ -125,9 +164,7 @@ export const useWhatsAppStore = create<WhatsAppState>()(
           state.contacts = state.contacts.filter((contact) => {
             if (!contact || !contact.number) return false
             const digits = contact.number.replace(/\D/g, '')
-            if (digits.length < 10) return false
-            if (SEED_PHANTOM_NUMBERS.has(digits)) return false
-            return true
+            return digits.length >= 10
           })
         }
         if (version < 3) {

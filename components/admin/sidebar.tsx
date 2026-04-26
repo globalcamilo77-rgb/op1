@@ -13,46 +13,88 @@ import {
   Settings,
   BarChart3,
   HardDrive,
-  MessageCircle,
+  Headphones,
   Palette,
   TrendingUp,
   Images,
-  Cloud,
   QrCode,
-  MapPin,
   Wallet,
-  Plug,
   Filter,
   Trophy,
+  Shield,
+  type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
-const adminLinks = [
-  { href: '/adminlr', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/adminlr/pedidos', label: 'Pedidos', icon: Package },
-  { href: '/adminlr/produtos', label: 'Produtos', icon: ShoppingBag },
-  { href: '/adminlr/categorias', label: 'Categorias', icon: FolderOpen },
-  { href: '/adminlr/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/adminlr/clientes', label: 'Clientes', icon: Users },
-  { href: '/adminlr/lojistas', label: 'Lojistas', icon: Store },
-  { href: '/adminlr/usuarios', label: 'Usuarios', icon: UserCog },
+interface NavLink {
+  href: string
+  label: string
+  icon: LucideIcon
+  superAdmin?: boolean
+}
+
+interface NavGroup {
+  label: string
+  items: NavLink[]
+  superAdmin?: boolean
+}
+
+// Grupos visiveis para todos os admins
+const baseGroups: NavGroup[] = [
+  {
+    label: 'Operacao',
+    items: [
+      { href: '/adminlr', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/adminlr/pedidos', label: 'Pedidos', icon: Package },
+      { href: '/adminlr/clientes', label: 'Clientes', icon: Users },
+      { href: '/adminlr/ranking', label: 'Ranking', icon: Trophy },
+    ],
+  },
+  {
+    label: 'Catalogo',
+    items: [
+      { href: '/adminlr/produtos', label: 'Produtos', icon: ShoppingBag },
+      { href: '/adminlr/categorias', label: 'Categorias', icon: FolderOpen },
+    ],
+  },
 ]
 
-const superAdminLinks = [
-  { href: '/adminlr/sistema', label: 'Sistema', icon: Settings },
-  { href: '/adminlr/aparencia', label: 'Aparencia', icon: Palette },
-  { href: '/adminlr/imagens', label: 'Imagens IA', icon: Images },
-  { href: '/adminlr/marketing', label: 'Marketing', icon: TrendingUp },
-  { href: '/adminlr/cidades', label: 'Cidades (LPs)', icon: MapPin },
-  { href: '/adminlr/funis', label: 'Funis', icon: Filter },
-  { href: '/adminlr/whatsapp', label: 'WhatsApp', icon: MessageCircle },
-  { href: '/adminlr/pagamentos', label: 'Pagamentos', icon: Wallet },
-  { href: '/adminlr/pix', label: 'PIX', icon: QrCode },
-  { href: '/adminlr/sincronizar', label: 'Sincronizar', icon: Cloud },
-  { href: '/adminlr/integracoes', label: 'Integracoes', icon: Plug },
-  { href: '/adminlr/relatorios', label: 'Relatorios', icon: BarChart3 },
-  { href: '/adminlr/backup', label: 'Backup', icon: HardDrive },
+// Grupos exclusivos do superadmin
+const superAdminGroups: NavGroup[] = [
+  {
+    label: 'Atendimento',
+    items: [
+      { href: '/adminlr/atendimento', label: 'Cidades, WhatsApp & IPs', icon: Headphones },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { href: '/adminlr/marketing', label: 'Marketing', icon: TrendingUp },
+      { href: '/adminlr/funis', label: 'Funis', icon: Filter },
+      { href: '/adminlr/imagens', label: 'Imagens IA', icon: Images },
+      { href: '/adminlr/aparencia', label: 'Aparencia', icon: Palette },
+    ],
+  },
+  {
+    label: 'Financeiro',
+    items: [
+      { href: '/adminlr/pix', label: 'PIX', icon: QrCode },
+      { href: '/adminlr/pagamentos', label: 'Pagamentos', icon: Wallet },
+    ],
+  },
+  {
+    label: 'Administrativo',
+    items: [
+      { href: '/adminlr/sistema', label: 'Sistema', icon: Settings },
+      { href: '/adminlr/lojistas', label: 'Lojistas', icon: Store },
+      { href: '/adminlr/usuarios', label: 'Usuarios', icon: UserCog },
+      { href: '/adminlr/seguranca', label: 'Seguranca', icon: Shield },
+      { href: '/adminlr/relatorios', label: 'Relatorios', icon: BarChart3 },
+      { href: '/adminlr/backup', label: 'Backup', icon: HardDrive },
+    ],
+  },
 ]
 
 export function AdminSidebar() {
@@ -64,8 +106,34 @@ export function AdminSidebar() {
     if (href === '/adminlr') {
       return pathname === '/adminlr'
     }
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(`${href}/`)
   }
+
+  const renderItem = (link: NavLink) => (
+    <li key={link.href}>
+      <Link
+        href={link.href}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors',
+          isActive(link.href)
+            ? 'bg-[var(--orange-primary)] text-white'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+        )}
+      >
+        <link.icon size={18} />
+        <span className="truncate">{link.label}</span>
+      </Link>
+    </li>
+  )
+
+  const renderGroup = (group: NavGroup, isFirst: boolean) => (
+    <div key={group.label} className={cn(!isFirst && 'mt-6 pt-4 border-t border-sidebar-border')}>
+      <div className="text-[10px] text-sidebar-foreground/50 uppercase font-bold tracking-wider mb-3">
+        {group.label}
+      </div>
+      <ul className="flex flex-col gap-1.5">{group.items.map(renderItem)}</ul>
+    </div>
+  )
 
   return (
     <aside className="w-[250px] bg-sidebar text-sidebar-foreground p-5 overflow-y-auto flex-shrink-0">
@@ -86,52 +154,8 @@ export function AdminSidebar() {
       </Link>
 
       <nav>
-        <ul className="flex flex-col gap-3">
-          {adminLinks.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors',
-                  isActive(link.href)
-                    ? 'bg-[var(--orange-primary)] text-white'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                )}
-              >
-                <link.icon size={18} />
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        {isSuperAdmin && (
-          <>
-            <div className="mt-6 pt-4 border-t border-sidebar-border">
-              <div className="text-xs text-sidebar-foreground/50 uppercase font-bold mb-3">
-                SuperAdmin
-              </div>
-              <ul className="flex flex-col gap-3">
-                {superAdminLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors',
-                        isActive(link.href)
-                          ? 'bg-[var(--orange-primary)] text-white'
-                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                      )}
-                    >
-                      <link.icon size={18} />
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
+        {baseGroups.map((group, idx) => renderGroup(group, idx === 0))}
+        {isSuperAdmin && superAdminGroups.map((group) => renderGroup(group, false))}
       </nav>
     </aside>
   )

@@ -271,14 +271,34 @@ export function PixPayment({
     window.setTimeout(() => setCopied(false), 2200)
   }
 
-  const whatsappText = encodeURIComponent(
-    `Ola! Paguei o PIX do pedido${orderId ? ` ${orderId}` : ''} no valor de ${currency(
-      amount,
-    )}. Segue o comprovante.`,
-  )
-  const whatsappHref = whatsappNumber
-    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappText}`
-    : undefined
+  const whatsappPlainText = `Ola! Paguei o PIX do pedido${
+    orderId ? ` ${orderId}` : ''
+  } no valor de ${currency(amount)}. Segue o comprovante.`
+
+  // Calcula o href ja na sua forma final para o ambiente do cliente:
+  //  - Mobile -> wa.me (abre app direto)
+  //  - Desktop -> web.whatsapp.com/send (sem redirect via api.whatsapp.com,
+  //    que pode falhar em proxies/AdsPower/VPN corporativa)
+  // Importante: o href eh recalculado com useMemo so depois de mounted=true
+  // para evitar mismatch SSR/CSR (o servidor sempre renderiza com wa.me).
+  const whatsappHref = useMemo(() => {
+    if (!whatsappNumber) return undefined
+    const clean = whatsappNumber.replace(/\D/g, '')
+    if (!clean) return undefined
+    if (typeof navigator !== 'undefined') {
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Opera Mini/i.test(
+        navigator.userAgent || '',
+      )
+      if (!isMobile) {
+        const params = new URLSearchParams({
+          phone: clean,
+          text: whatsappPlainText,
+        })
+        return `https://web.whatsapp.com/send?${params.toString()}`
+      }
+    }
+    return `https://wa.me/${clean}?text=${encodeURIComponent(whatsappPlainText)}`
+  }, [whatsappNumber, whatsappPlainText])
 
   if (!pix.enabled) {
     return (
@@ -460,22 +480,24 @@ export function PixPayment({
           )}
 
           {pix.whatsappConfirmEnabled && whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-md bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold transition-colors"
-              onClick={() =>
-                trackEvent('lead', {
-                  value: amount,
-                  meta: {
-                    type: 'pix_whatsapp_click',
-                    txid,
-                    ...(orderId ? { orderId } : {}),
-                  },
-                })
-              }
-            >
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-md bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold transition-colors"
+                  onClick={() => {
+                    // NAO chamamos preventDefault — deixamos o navegador abrir
+                    // o href nativo via target="_blank" (evita popup blocker)
+                    trackEvent('lead', {
+                      value: amount,
+                      meta: {
+                        type: 'pix_whatsapp_click',
+                        txid,
+                        ...(orderId ? { orderId } : {}),
+                      },
+                    })
+                  }}
+                >
               <MessageCircle size={16} />
               Enviar comprovante pelo WhatsApp
             </a>

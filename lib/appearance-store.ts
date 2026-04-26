@@ -25,8 +25,6 @@ interface AppearanceState extends AppearanceSettings {
   reset: () => void
 }
 
-const SEED_PHANTOM_WHATSAPPS = new Set(['551145724545'])
-
 export const DEFAULT_APPEARANCE: AppearanceSettings = {
   brandName: 'Alfa',
   brandHighlight: 'Construção',
@@ -56,7 +54,7 @@ export const useAppearanceStore = create<AppearanceState>()(
     }),
     {
       name: 'alfaconstrucao-appearance',
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         const state = { ...(persisted || {}) } as Partial<AppearanceSettings>
         if (version < 2 && (!state.logoUrl || state.logoUrl.trim() === '')) {
@@ -71,20 +69,18 @@ export const useAppearanceStore = create<AppearanceState>()(
           }
         }
         if (version < 4) {
-          const waDigits = (state.footerWhatsapp || '').replace(/\D/g, '')
-          if (SEED_PHANTOM_WHATSAPPS.has(waDigits)) {
-            state.footerWhatsapp = ''
-          }
-          if (
-            state.notificationBarText &&
-            state.notificationBarText.includes('4572-4545')
-          ) {
-            state.notificationBarText = DEFAULT_APPEARANCE.notificationBarText
-          }
+          // Limpa telefone do rodape do seed legado
           const phoneDigits = (state.footerPhone || '').replace(/\D/g, '')
-          if (phoneDigits === '08003336722' || phoneDigits === '0800333672') {
+          if (phoneDigits.startsWith('0800333')) {
             state.footerPhone = ''
           }
+        }
+        if (version < 5) {
+          // Bump v5: zera o texto da barra e o WhatsApp do rodape para forcar
+          // configuracao manual no /adminlr/aparencia, ja que os valores
+          // anteriores nao devem mais ser usados.
+          state.footerWhatsapp = ''
+          state.notificationBarText = DEFAULT_APPEARANCE.notificationBarText
         }
         return state as AppearanceSettings
       },

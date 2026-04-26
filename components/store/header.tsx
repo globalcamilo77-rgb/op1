@@ -12,6 +12,7 @@ import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
 import { useTrackingParamsStore } from '@/lib/tracking-params-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 export function NotificationBar() {
   const pathname = usePathname()
@@ -97,9 +98,7 @@ export function NotificationBar() {
       const trackingTag = trackingEntries.map(([k, v]) => `${k}=${v}`).join(' | ')
       finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
     }
-    const encoded = encodeURIComponent(finalMessage)
-    const url = `https://wa.me/${targetNumber}${encoded ? `?text=${encoded}` : ''}`
-    window.open(url, '_blank', 'noopener,noreferrer')
+    openWhatsApp(targetNumber, finalMessage)
   }
 
   // Lista de promocoes que rodam na marquee. O texto admin (notificationBarText)

@@ -6,6 +6,7 @@ import { Mail, MessageCircle, Phone } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_APPEARANCE, useAppearanceStore } from '@/lib/appearance-store'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 function formatBrPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
@@ -175,6 +176,10 @@ export function Footer() {
                     </span>
                     <a
                       href={href}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        openWhatsApp(item.number, whatsapp.defaultMessage || undefined)
+                      }}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 hover:underline"

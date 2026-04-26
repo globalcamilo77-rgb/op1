@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -40,8 +40,9 @@ import {
   fetchGatewayConfig,
   GatewayChargeNormalized,
 } from '@/lib/pix-gateway'
+import { PixWebhookTester } from '@/components/admin/pix-webhook-tester'
 
-type Tab = 'config' | 'cobrancas' | 'nova'
+type Tab = 'config' | 'cobrancas' | 'nova' | 'webhook'
 
 const inputClass =
   'px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground'
@@ -216,6 +217,7 @@ export default function AdminPixPage() {
             { id: 'config' as Tab, label: 'Configuracao', icon: Wallet },
             { id: 'cobrancas' as Tab, label: `Cobrancas (${pix.charges.length})`, icon: Banknote },
             { id: 'nova' as Tab, label: 'Nova cobranca manual', icon: QrCode },
+            { id: 'webhook' as Tab, label: 'Webhook de teste', icon: Send },
           ].map((t) => {
             const active = tab === t.id
             const Icon = t.icon
@@ -619,6 +621,7 @@ export default function AdminPixPage() {
         )}
 
         {tab === 'cobrancas' && <ChargesList />}
+        {tab === 'webhook' && <PixWebhookTester />}
         {tab === 'nova' && <NewChargeForm onCreated={() => setTab('cobrancas')} />}
       </div>
     </>
