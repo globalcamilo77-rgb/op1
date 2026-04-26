@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isIpBlocked } from '@/lib/supabase-ip-blocks'
+import { isIpAllowed } from '@/lib/supabase-ip-allowlist'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -18,6 +19,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Camuflagem: IPs na allowlist NUNCA sao tratados como bloqueados,
+    // mesmo que apareçam em ip_blocks por algum motivo. Garantia anti-lockout.
+    const allowed = await isIpAllowed(ip)
+    if (allowed) {
+      return NextResponse.json(
+        { blocked: false, allowed: true },
+        {
+          headers: { 'Cache-Control': 'public, max-age=30, s-maxage=30' },
+        },
+      )
+    }
+
     const blocked = await isIpBlocked(ip)
     return NextResponse.json(
       { blocked },

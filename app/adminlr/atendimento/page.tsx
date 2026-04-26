@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store'
-import { MapPin, MessageCircle, Shield, ArrowRight } from 'lucide-react'
+import { MapPin, MessageCircle, Shield, ShieldCheck, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IpBlocksPanel } from '@/components/admin/ip-blocks-panel'
+import { IpAllowlistPanel } from '@/components/admin/ip-allowlist-panel'
 
-type Tab = 'cidades' | 'whatsapp' | 'bloqueios'
+type Tab = 'cidades' | 'whatsapp' | 'bloqueios' | 'protegidos'
 
 export default function AtendimentoPage() {
   const router = useRouter()
@@ -43,6 +44,12 @@ export default function AtendimentoPage() {
       label: 'IPs Bloqueados',
       icon: Shield,
       description: 'IPs barrados após PIX confirmado (timer 1h) ou bloqueados manualmente',
+    },
+    {
+      id: 'protegidos',
+      label: 'IPs Protegidos',
+      icon: ShieldCheck,
+      description: 'Camuflagem: IPs imunes a qualquer bloqueio (operador, loja física, suporte)',
     },
   ]
 
@@ -85,6 +92,7 @@ export default function AtendimentoPage() {
       {tab === 'cidades' && <CidadesShortcut />}
       {tab === 'whatsapp' && <WhatsAppShortcut />}
       {tab === 'bloqueios' && <IpBlocksPanel />}
+      {tab === 'protegidos' && <IpAllowlistPanel />}
     </div>
   )
 }

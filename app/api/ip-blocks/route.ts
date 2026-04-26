@@ -5,6 +5,7 @@ import {
   removeIpBlock,
   unblockIp,
 } from '@/lib/supabase-ip-blocks'
+import { isIpAllowed } from '@/lib/supabase-ip-allowlist'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -30,6 +31,17 @@ export async function POST(request: Request) {
     }
     if (!body.ip) {
       return NextResponse.json({ error: 'ip obrigatorio' }, { status: 400 })
+    }
+    // Camuflagem: nao deixa nem o admin se auto-bloquear se o IP estiver na allowlist
+    const allowed = await isIpAllowed(body.ip)
+    if (allowed) {
+      return NextResponse.json(
+        {
+          block: null,
+          error: 'IP esta na allowlist (camuflagem) e nao pode ser bloqueado. Remova da allowlist primeiro.',
+        },
+        { status: 409 },
+      )
     }
     const block = await addIpBlock(body)
     return NextResponse.json({ block }, { status: 200 })

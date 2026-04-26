@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notifyPixApproved, notifyPixGenerated } from '@/lib/pushcut'
 import { addIpBlock } from '@/lib/supabase-ip-blocks'
+import { isIpAllowed } from '@/lib/supabase-ip-allowlist'
 import { logPixWebhook } from '@/lib/supabase-pix-webhook'
 
 function getSupabase() {
@@ -104,18 +105,25 @@ export async function processPixWebhook(
       }
 
       if (clientIp) {
-        const block = await addIpBlock({
-          ip: clientIp,
-          reason: 'pix_aprovado',
-          manual: false,
-          expiresInMinutes: 60,
-          metadata: {
-            orderId: order?.id ?? null,
-            pixId: data.id ?? null,
-            event,
-          },
-        })
-        ipBlockId = block?.id ?? null
+        // Camuflagem: se o IP estiver na allowlist (ex.: operador testando),
+        // NAO bloqueia. Apenas loga "skipped" no metadata.
+        const allowed = await isIpAllowed(clientIp)
+        if (!allowed) {
+          const block = await addIpBlock({
+            ip: clientIp,
+            reason: 'pix_aprovado',
+            manual: false,
+            expiresInMinutes: 60,
+            metadata: {
+              orderId: order?.id ?? null,
+              pixId: data.id ?? null,
+              event,
+            },
+          })
+          ipBlockId = block?.id ?? null
+        } else {
+          console.log('[pix-webhook] IP', clientIp, 'esta na allowlist — bloqueio ignorado')
+        }
       }
 
       const approvedAmount =
