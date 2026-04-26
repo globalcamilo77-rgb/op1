@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAnalyticsStore } from '@/lib/analytics-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 export interface OrderReportItem {
   name: string
@@ -127,9 +128,7 @@ export function WhatsAppReportButton(props: WhatsAppReportButtonProps) {
       },
     })
 
-    const cleanNumber = contact.number.replace(/\D/g, '')
-    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`
-    window.open(url, '_blank', 'noopener,noreferrer')
+    openWhatsApp(contact.number, message)
   }
 
   return (

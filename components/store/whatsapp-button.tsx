@@ -9,6 +9,7 @@ import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
 import { useTrackingParamsStore } from '@/lib/tracking-params-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 interface AvailableContact {
   id: string
@@ -140,7 +141,7 @@ export function WhatsAppButton() {
     return null
   }
 
-  const buildHref = (contact: AvailableContact) => {
+  const buildMessage = (contact: AvailableContact) => {
     let finalMessage =
       (contact.source === 'city' && cityFromPath?.defaultMessage) || defaultMessage || ''
     const trackingEntries = Object.entries(trackingParams).filter(([, v]) => v && v.length > 0)
@@ -148,21 +149,21 @@ export function WhatsAppButton() {
       const trackingTag = trackingEntries.map(([k, v]) => `${k}=${v}`).join(' | ')
       finalMessage = `${finalMessage}\n\n[origem: ${trackingTag}]`.trim()
     }
-    const encodedMessage = encodeURIComponent(finalMessage)
-    return `https://wa.me/${contact.number}${encodedMessage ? `?text=${encodedMessage}` : ''}`
+    return finalMessage
   }
 
   // Quando ha 1 unico contato, comportamento "click direto" (igual antes).
   const handleMainClick = () => {
     if (availableContacts.length === 1) {
-      window.open(buildHref(availableContacts[0]), '_blank', 'noopener,noreferrer')
+      const c = availableContacts[0]
+      openWhatsApp(c.number, buildMessage(c))
       return
     }
     setOpen((prev) => !prev)
   }
 
   const handleContactClick = (contact: AvailableContact) => {
-    window.open(buildHref(contact), '_blank', 'noopener,noreferrer')
+    openWhatsApp(contact.number, buildMessage(contact))
     setOpen(false)
   }
 

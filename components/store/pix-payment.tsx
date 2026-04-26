@@ -18,6 +18,7 @@ import { usePixStore } from '@/lib/pix-store'
 import { generatePixPayload, generateTxid } from '@/lib/pix-payload'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAnalyticsStore } from '@/lib/analytics-store'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 import { createGatewayPix, GatewayChargeNormalized } from '@/lib/pix-gateway'
 
 interface PixPaymentProps {
@@ -271,14 +272,21 @@ export function PixPayment({
     window.setTimeout(() => setCopied(false), 2200)
   }
 
-  const whatsappText = encodeURIComponent(
-    `Ola! Paguei o PIX do pedido${orderId ? ` ${orderId}` : ''} no valor de ${currency(
-      amount,
-    )}. Segue o comprovante.`,
-  )
+  const whatsappPlainText = `Ola! Paguei o PIX do pedido${
+    orderId ? ` ${orderId}` : ''
+  } no valor de ${currency(amount)}. Segue o comprovante.`
+  const whatsappText = encodeURIComponent(whatsappPlainText)
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappText}`
     : undefined
+
+  // Em desktop, evita o redirect via api.whatsapp.com (que falha em redes
+  // com proxy) e abre WhatsApp Web direto. Em mobile, segue o href padrao.
+  const handleWhatsAppClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!whatsappNumber) return
+    event.preventDefault()
+    openWhatsApp(whatsappNumber, whatsappPlainText)
+  }
 
   if (!pix.enabled) {
     return (
@@ -460,11 +468,12 @@ export function PixPayment({
           )}
 
           {pix.whatsappConfirmEnabled && whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-md bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold transition-colors"
+                <a
+                  href={whatsappHref}
+                  onClick={handleWhatsAppClick}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-md bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold transition-colors"
               onClick={() =>
                 trackEvent('lead', {
                   value: amount,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { MessageCircle, Loader2 } from 'lucide-react'
+import { openWhatsApp } from '@/lib/whatsapp-link'
 
 interface Props {
   productId: string
@@ -42,8 +43,7 @@ export function ProductLPCta({
       const message =
         ctaMessage ||
         `Olá! Tenho interesse em comprar:\n\n*${productName}*\nValor: ${currency(price)}\n\nPoderia me ajudar?`
-      const url = `https://wa.me/${number.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openWhatsApp(number, message)
     } catch (e) {
       console.error('[lp-cta] erro', e)
       alert('Não foi possível abrir o WhatsApp agora.')
