@@ -20,6 +20,8 @@ export interface OrderInput {
   attendantName?: string | null
   pixTransactionId?: string | null
   customerIp?: string | null
+  /** ID externo usado na integracao com gateway (ex: Koliseu externalReference) */
+  externalReference?: string | null
 }
 
 export async function createOrder(order: OrderInput): Promise<string | null> {
@@ -65,6 +67,7 @@ export async function createOrder(order: OrderInput): Promise<string | null> {
       tracking: trackingObj,
       attendant_name: order.attendantName ?? null,
       pix_transaction_id: order.pixTransactionId ?? null,
+      external_reference: order.externalReference ?? null,
     })
     .select('id')
     .single()
