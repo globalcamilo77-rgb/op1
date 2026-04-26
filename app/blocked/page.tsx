@@ -42,14 +42,9 @@ export default function BlockedPage() {
             Se precisar de algo, fale com a gente direto pelo WhatsApp do atendimento.
           </p>
 
-          <a
-            href="https://wa.me/551145724545?text=Acabei%20de%20pagar%20meu%20PIX%20e%20gostaria%20de%20confirmar%20a%20entrega"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-[var(--success,_theme(colors.emerald.600))] hover:bg-emerald-700 text-white px-5 py-3 rounded-md font-bold text-sm transition-colors"
-          >
-            Falar no WhatsApp
-          </a>
+          <p className="mt-6 text-xs text-muted-foreground italic">
+            Continue a conversa no mesmo numero do WhatsApp em que voce ja foi atendido.
+          </p>
         </div>
       </main>
 

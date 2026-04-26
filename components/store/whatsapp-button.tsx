@@ -17,15 +17,9 @@ interface AvailableContact {
   source: 'city' | 'global'
 }
 
-// Numero de seguranca: usado APENAS quando nenhum contato esta cadastrado
-// (cliente novo, sem dados em localStorage). Pode ser sobrescrito cadastrando
-// qualquer contato em /adminlr/whatsapp ou /adminlr/cidades.
-const EMERGENCY_WHATSAPP: AvailableContact = {
-  id: 'emergency-fallback',
-  label: 'Fale conosco',
-  number: '551145724545',
-  source: 'global',
-}
+// Sem fallback hardcoded: se nao houver contatos cadastrados em
+// /adminlr/whatsapp, /adminlr/cidades ou no rodape de aparencia, o botao
+// simplesmente nao aparece. Cadastre ao menos um numero no SuperAdmin para exibi-lo.
 
 export function WhatsAppButton() {
   const pathname = usePathname()
@@ -139,15 +133,10 @@ export function WhatsAppButton() {
       }
     }
 
-    // 5) Garantia: nunca deixar a lista vazia. Sempre tem ao menos o emergency.
-    if (items.length === 0) {
-      items.push(EMERGENCY_WHATSAPP)
-    }
-
     return items
   }, [mounted, cityFromPath, contacts, footerWhatsapp, cities])
 
-  if (!mounted) {
+  if (!mounted || availableContacts.length === 0) {
     return null
   }
 
