@@ -12,7 +12,6 @@ create policy "ip_allowlist: anon all"
   on public.ip_allowlist for all
   using (true) with check (true);
 
--- Seed do IP do operador (camuflagem permanente)
-insert into public.ip_allowlist (ip, label)
-values ('177.170.85.161', 'Admin / Operador')
-on conflict (ip) do nothing;
+-- Os IPs protegidos sao gerenciados pelo SuperAdmin em
+-- /adminlr/atendimento -> aba "IPs Protegidos" (botao "Proteger meu IP atual").
+-- Nao incluimos seed aqui para nao expor IPs reais no historico do repositorio.
