@@ -21,19 +21,22 @@ function getClientIp(request: NextRequest): string {
   return ''
 }
 
-interface WebhookBody {
-  event?: string
-  data?: {
-    id?: string
-    externalReference?: string
-    amount?: number
-    customerIp?: string
-    customer?: {
-      name?: string
-      email?: string
-      phone?: string
-    }
+interface WebhookData {
+  id?: string
+  externalReference?: string
+  amount?: number
+  status?: string
+  customerIp?: string
+  customer?: {
+    name?: string
+    email?: string
+    phone?: string
   }
+}
+
+interface WebhookBody extends WebhookData {
+  event?: string
+  data?: WebhookData
 }
 
 export async function POST(request: NextRequest) {
@@ -47,13 +50,26 @@ export async function POST(request: NextRequest) {
     body = {}
   }
 
+  // Aceita tanto o formato canonico { event, data } quanto o formato Koliseu
+  // cru ({ id, status, amount, customer } no topo). Quando vier cru, o
+  // proprio status define se eh aprovado/gerado.
   const event = body.event || ''
-  const data = body.data || {}
+  const data: WebhookData = body.data || (body as WebhookData)
+  const rawStatus = (data.status || '').toUpperCase()
   const supabase = getSupabase()
 
   // Identificar tipo do evento e normalizar
-  const isApproved = event === 'payment.confirmed' || event === 'payment.paid' || event === 'pix.approved'
-  const isGenerated = event === 'payment.created' || event === 'pix.generated'
+  const isApproved =
+    event === 'payment.confirmed' ||
+    event === 'payment.paid' ||
+    event === 'pix.approved' ||
+    rawStatus === 'PAID' ||
+    rawStatus === 'CONFIRMED' ||
+    rawStatus === 'APPROVED'
+  const isGenerated =
+    event === 'payment.created' ||
+    event === 'pix.generated' ||
+    (!isApproved && (rawStatus === 'PENDING' || rawStatus === 'CREATED' || rawStatus === 'WAITING'))
 
   // Buscar pedido relacionado (se houver)
   type OrderRow = {
