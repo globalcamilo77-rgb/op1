@@ -470,21 +470,21 @@ export function PixPayment({
           {pix.whatsappConfirmEnabled && whatsappHref && (
                 <a
                   href={whatsappHref}
-                  onClick={handleWhatsAppClick}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-md bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold transition-colors"
-              onClick={() =>
-                trackEvent('lead', {
-                  value: amount,
-                  meta: {
-                    type: 'pix_whatsapp_click',
-                    txid,
-                    ...(orderId ? { orderId } : {}),
-                  },
-                })
-              }
-            >
+                  onClick={(event) => {
+                    trackEvent('lead', {
+                      value: amount,
+                      meta: {
+                        type: 'pix_whatsapp_click',
+                        txid,
+                        ...(orderId ? { orderId } : {}),
+                      },
+                    })
+                    handleWhatsAppClick(event)
+                  }}
+                >
               <MessageCircle size={16} />
               Enviar comprovante pelo WhatsApp
             </a>
