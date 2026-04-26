@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, ShoppingCart, Star } from 'lucide-react'
+import { Check, MessageCircle, ShoppingCart, Star } from 'lucide-react'
 import { QuantityPicker } from './quantity-picker'
 import type { StoreProduct } from '@/lib/products-store'
 import { useCartStore } from '@/lib/cart-store'
 import { useAnalyticsStore } from '@/lib/analytics-store'
+import { useWhatsAppStore } from '@/lib/whatsapp-store'
 
 function currency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -19,8 +20,28 @@ interface ProductCardProps {
 export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps) {
   const { addItem } = useCartStore()
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
+  const registerClickAndGetContact = useWhatsAppStore((s) => s.registerClickAndGetContact)
   const [quantity, setQuantity] = useState(1)
   const [justAdded, setJustAdded] = useState(false)
+
+  const handleWhatsAppClick = () => {
+    const contact = registerClickAndGetContact()
+    if (!contact) return
+    
+    const message = `Ola, tudo bem? Gostaria de receber mais informacoes sobre ${product.name}`
+    const url = `https://wa.me/${contact.number}?text=${encodeURIComponent(message)}`
+    
+    trackEvent('lead', {
+      value: product.price,
+      meta: {
+        type: 'product_whatsapp_click',
+        productId: product.id,
+        productName: product.name,
+      },
+    })
+    
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
   const badgeText = showSubcategoryBadge && product.subcategory ? product.subcategory : product.category
 
@@ -121,6 +142,14 @@ export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps)
               Adicionar {quantity > 1 ? `${quantity} ao carrinho` : 'ao carrinho'}
             </>
           )}
+        </button>
+
+        <button
+          onClick={handleWhatsAppClick}
+          className="w-full inline-flex items-center justify-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors bg-[#25D366] hover:bg-[#20b858]"
+        >
+          <MessageCircle size={16} />
+          Tirar duvidas
         </button>
       </div>
     </div>
