@@ -11,8 +11,16 @@ import { ActiveCityBanner } from '@/components/store/active-city-banner'
 import { TrackingParamsCapture } from '@/components/tracking-params-capture'
 import { StoresHydrator } from '@/components/stores-hydrator'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+  display: 'swap',
+})
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'AlfaConstrução - Melhores orcamentos com entrega rapida',
@@ -44,7 +52,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className="bg-background">
+    <html
+      lang="pt-BR"
+      className={`${geistSans.variable} ${geistMono.variable} bg-background`}
+    >
       <head>
         {/* Google Tag Manager */}
         <Script id="gtm-init" strategy="afterInteractive">
