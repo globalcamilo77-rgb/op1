@@ -182,7 +182,7 @@ function ObrigadoContent() {
         const trackedItems = parseItems(fetched.items).map((it, idx) => ({
           item_id: it.product_id ?? `item-${idx}`,
           item_name: it.name ?? 'Produto',
-          item_brand: it.brand ?? undefined,
+          item_category: it.category ?? undefined,
           price: Number(it.unit_price) || 0,
           quantity: Number(it.quantity) || 1,
         }))
