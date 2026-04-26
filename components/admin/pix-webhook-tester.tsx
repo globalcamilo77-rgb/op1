@@ -234,6 +234,11 @@ export function PixWebhookTester() {
                 <span className="font-mono">{result.pixId}</span> · IP registrado:{' '}
                 <span className="font-mono">{result.forwardedIp}</span>
               </div>
+              {result.webhookError && (
+                <div className="text-xs mt-1.5 font-mono break-all">
+                  <strong>Erro Pushcut:</strong> {result.webhookError}
+                </div>
+              )}
             </div>
           </div>
 

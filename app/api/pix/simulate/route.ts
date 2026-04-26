@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { processPixWebhook, type PixWebhookBody } from '@/lib/pix-webhook-processor'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /**
  * Endpoint de simulacao de webhook PIX.
- * Constroi um payload com os dois formatos suportados pelo webhook real
- * (event + data + status crus do gateway), garantindo que tanto o
- * Pushcut quanto o ip_block sejam disparados ao testar.
+ * Chama processPixWebhook DIRETO (sem loopback HTTP), garantindo que
+ * Pushcut + ip_block + pix_webhook_log rodem do mesmo jeito que rodariam
+ * com um POST real da Koliseu.
  */
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown> = {}
@@ -22,7 +23,6 @@ export async function POST(request: NextRequest) {
   const amount = typeof body.amount === 'number' ? body.amount : 100.0
   const orderId = (body.orderId as string) || `order-test-${Date.now()}`
 
-  // IP que sera registrado pelo webhook real - default: IP do admin que clicou
   const adminIp =
     (body.ip as string) ||
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -35,12 +35,8 @@ export async function POST(request: NextRequest) {
 
   const isApproved = eventType === 'pix_aprovado'
   const koliseuStatus = isApproved ? 'PAID' : 'PENDING'
-  // Tipo de evento que o webhook reconhece em body.event
   const webhookEvent = isApproved ? 'payment.confirmed' : 'payment.created'
 
-  // Payload no formato canonico esperado pelo webhook: { event, data: {...} }
-  // O webhook tambem aceita os campos crus no topo (status PAID/PENDING),
-  // mas mandar no formato cru + envelope cobre os dois caminhos.
   const customer = {
     name: customerName,
     email: customerEmail,
@@ -50,7 +46,7 @@ export async function POST(request: NextRequest) {
   const data = {
     id: pixId,
     status: koliseuStatus,
-    amount: Math.round(amount * 100), // webhook divide por 100, entao manda em centavos
+    amount: Math.round(amount * 100), // centavos
     externalReference: orderId,
     paymentMethod: 'PIX',
     customer,
@@ -60,39 +56,27 @@ export async function POST(request: NextRequest) {
     createdAt: new Date().toISOString(),
   }
 
-  const webhookPayload = { event: webhookEvent, data }
+  const webhookPayload: PixWebhookBody = { event: webhookEvent, data }
 
-  // Dispara o webhook real, propagando o IP do admin como x-forwarded-for
-  // para o webhook capturar corretamente e bloquear esse IP em 1h.
-  const origin = request.nextUrl.origin
-  const webhookUrl = `${origin}/api/pix/webhook`
-
-  let webhookResult: unknown = null
-  let webhookError: string | null = null
-  try {
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-forwarded-for': adminIp,
-        'x-pix-simulated': '1',
-        'user-agent': 'AlfaAdmin/Simulator',
-      },
-      body: JSON.stringify(webhookPayload),
-    })
-    webhookResult = await res.json().catch(() => ({ status: res.status }))
-  } catch (err) {
-    webhookError = err instanceof Error ? err.message : String(err)
-  }
+  const result = await processPixWebhook(webhookPayload, {
+    requestIp: adminIp,
+    userAgent: 'AlfaAdmin/Simulator',
+  })
 
   return NextResponse.json({
-    ok: !webhookError,
+    ok: result.ok,
     event: eventType,
     pixId,
     orderId,
     forwardedIp: adminIp,
     payloadSent: webhookPayload,
-    webhookResult,
-    webhookError,
+    webhookResult: {
+      received: true,
+      blocked: result.blocked,
+      detectedAs: result.detectedAs,
+      ipBlockId: result.ipBlockId,
+      pushcutResult: result.pushcutResult,
+    },
+    webhookError: result.pushcutError,
   })
 }
