@@ -7,7 +7,6 @@ import { FeaturesSection } from '@/components/store/features-section'
 import { FeaturedProducts } from '@/components/store/featured-products'
 import { BannersSection } from '@/components/store/banners-section'
 import { HowItWorks } from '@/components/store/how-it-works'
-import { BrandsSection } from '@/components/store/brands-section'
 import { CitiesSection } from '@/components/store/cities-section'
 import { FaqSection } from '@/components/store/faq-section'
 import { Footer } from '@/components/store/footer'
@@ -98,7 +97,6 @@ export default async function CityLandingPage({
         <FeaturedProducts />
         <BannersSection />
         <HowItWorks />
-        <BrandsSection />
         <CitiesSection />
         <FaqSection />
       </main>
