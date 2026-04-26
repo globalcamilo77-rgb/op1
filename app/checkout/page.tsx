@@ -188,15 +188,22 @@ export default function CheckoutPage() {
     (acc, item) => acc + item.price * item.quantity,
     0,
   )
-  const shipping = visibleItems.length > 0 ? 49.9 : 0
+  // Frete fixo de R$ 20 sempre que houver itens. O desconto NUNCA reduz o
+  // frete — incide apenas sobre o valor bruto dos produtos (subtotal).
+  const shipping = visibleItems.length > 0 ? 20 : 0
   const pixDiscountPercent = pixConfig.enabled ? pixConfig.discountPercent : 0
   const pixDiscount =
     paymentMethod === 'pix' && visibleItems.length > 0
-      ? Number(((subtotal + shipping) * (pixDiscountPercent / 100)).toFixed(2))
+      ? Number((subtotal * (pixDiscountPercent / 100)).toFixed(2))
       : 0
   const generalDiscount = visibleItems.length > 0 ? 35 : 0
-  const discount = paymentMethod === 'pix' ? pixDiscount + generalDiscount : generalDiscount
-  const total = Math.max(0, subtotal + shipping - discount)
+  // Total de descontos limitado ao subtotal — nunca passa do valor dos produtos
+  const discount = Math.min(
+    subtotal,
+    paymentMethod === 'pix' ? pixDiscount + generalDiscount : generalDiscount,
+  )
+  // Total = (produtos - desconto) + frete fixo
+  const total = Math.max(0, subtotal - discount) + shipping
 
   const pixOrderId = useMemo(() => generateTxid('OB'), [])
 
