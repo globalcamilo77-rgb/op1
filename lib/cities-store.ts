@@ -201,25 +201,12 @@ export const useCitiesStore = create<CitiesState>()(
         const city = get().cities.find((c) => c.slug === slug)
         if (!city || !city.active) return null
 
+        // Cidades nao rotacionam: cada LP eh segmentada para um publico
+        // especifico, entao o cliente sempre cai no mesmo numero (o primeiro
+        // contato ativo cadastrado para aquela cidade). A rotacao automatica
+        // existe APENAS no WhatsApp Global, em /adminlr/atendimento.
         const activeContacts = city.contacts.filter((c) => c.active && c.number)
         if (activeContacts.length === 0) return null
-
-        const dddCounts: Record<string, number> = {}
-        activeContacts.forEach((c) => {
-          const digits = c.number.replace(/\D/g, '')
-          const ddd = digits.length >= 4 ? digits.slice(2, 4) : ''
-          if (ddd) {
-            dddCounts[ddd] = (dddCounts[ddd] || 0) + 1
-          }
-        })
-
-        const uniqueDDDs = Object.keys(dddCounts)
-        if (uniqueDDDs.length === 1) {
-          const windowMs = Math.max(1, city.rotationIntervalMinutes) * 60 * 1000
-          const currentWindow = Math.floor(Date.now() / windowMs)
-          return activeContacts[currentWindow % activeContacts.length]
-        }
-
         return activeContacts[0]
       },
 

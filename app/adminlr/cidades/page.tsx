@@ -549,9 +549,10 @@ function CityCard({
         </form>
 
         <p className="text-[11px] text-muted-foreground mt-2">
-          A rotacao troca o numero a cada{' '}
-          <strong>{city.rotationIntervalMinutes}</strong> minutos, de forma deterministica
-          (mesmo lead que recarrega a pagina cai no mesmo numero).
+          Cidades <strong>nao rotacionam</strong>: o cliente que entra nesta LP cai sempre no
+          primeiro numero ativo cadastrado aqui. Se voce quiser distribuir conversas entre
+          varios atendentes com rotacao automatica, use o painel <em>WhatsApp Globais</em>
+          em /adminlr/atendimento.
         </p>
       </div>
 
@@ -578,27 +579,12 @@ function CityCard({
                 }
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-3">
               <label className="text-xs text-muted-foreground">Slug da URL</label>
               <input
                 className={`${inputClass} font-mono`}
                 value={draft.slug}
                 onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Rotacao (min)</label>
-              <input
-                type="number"
-                min={1}
-                className={inputClass}
-                value={draft.rotationIntervalMinutes}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    rotationIntervalMinutes: Number(event.target.value) || 1,
-                  })
-                }
               />
             </div>
           </div>
