@@ -9,6 +9,7 @@ import { useAppearanceStore } from '@/lib/appearance-store'
 import { useCitiesStore } from '@/lib/cities-store'
 import { useActiveCityStore } from '@/lib/active-city-store'
 import { useTrackingParamsStore } from '@/lib/tracking-params-store'
+import { useAnalyticsStore } from '@/lib/analytics-store'
 import { openWhatsApp } from '@/lib/whatsapp-link'
 
 interface AvailableContact {
@@ -27,6 +28,7 @@ export function WhatsAppButton() {
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
+  const trackEvent = useAnalyticsStore((state) => state.trackEvent)
 
   const { contacts, defaultMessage } = useWhatsAppStore(
     useShallow((state) => ({
@@ -156,6 +158,15 @@ export function WhatsAppButton() {
   const handleMainClick = () => {
     if (availableContacts.length === 1) {
       const c = availableContacts[0]
+      // Dispara evento de lead para o Google Analytics/GTM
+      trackEvent('lead', {
+        meta: {
+          type: 'floating_whatsapp_click',
+          contactLabel: c.label,
+          source: c.source,
+          page: pathname,
+        },
+      })
       openWhatsApp(c.number, buildMessage(c))
       return
     }
@@ -163,6 +174,15 @@ export function WhatsAppButton() {
   }
 
   const handleContactClick = (contact: AvailableContact) => {
+    // Dispara evento de lead para o Google Analytics/GTM
+    trackEvent('lead', {
+      meta: {
+        type: 'floating_whatsapp_click',
+        contactLabel: contact.label,
+        source: contact.source,
+        page: pathname,
+      },
+    })
     openWhatsApp(contact.number, buildMessage(contact))
     setOpen(false)
   }
