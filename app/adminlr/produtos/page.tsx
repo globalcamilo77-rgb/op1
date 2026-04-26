@@ -13,6 +13,7 @@ import {
   CloudUpload,
   Upload,
   Loader2,
+  FileText,
 } from 'lucide-react'
 import { AdminTopbar } from '@/components/admin/topbar'
 import { useProductsStore, type StoreProduct } from '@/lib/products-store'
@@ -394,6 +395,14 @@ export default function AdminProdutosPage() {
                           <Pencil size={14} />
                           Editar
                         </button>
+                        <a
+                          href={`/adminlr/produtos/${encodeURIComponent(product.id)}/lp`}
+                          className="inline-flex items-center gap-1 text-sm text-purple-700 hover:text-purple-900 font-semibold"
+                          title="Editar Landing Page deste produto"
+                        >
+                          <FileText size={14} />
+                          LP
+                        </a>
                         <button
                           onClick={() => removeProduct(product.id)}
                           className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
