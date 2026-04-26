@@ -36,8 +36,6 @@ interface WhatsAppState {
   syncAllToSupabase: () => Promise<void>
 }
 
-const SEED_PHANTOM_NUMBERS = new Set(['551145724545'])
-
 const sanitizeNumber = (value: string) => value.replace(/\D/g, '')
 
 const getActiveContacts = (state: Pick<WhatsAppState, 'contacts'>): WhatsAppContact[] =>
@@ -166,9 +164,7 @@ export const useWhatsAppStore = create<WhatsAppState>()(
           state.contacts = state.contacts.filter((contact) => {
             if (!contact || !contact.number) return false
             const digits = contact.number.replace(/\D/g, '')
-            if (digits.length < 10) return false
-            if (SEED_PHANTOM_NUMBERS.has(digits)) return false
-            return true
+            return digits.length >= 10
           })
         }
         if (version < 3) {

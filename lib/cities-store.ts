@@ -291,7 +291,7 @@ export const useCitiesStore = create<CitiesState>()(
               contacts: (city.contacts || []).filter((c) => {
                 if (!c || !c.number) return false
                 const digits = c.number.replace(/\D/g, '')
-                return digits.length >= 10 && digits !== '551145724545'
+                return digits.length >= 10
               }),
             }))
             .filter((city) => city.id !== 'city-seed-sao-paulo')
