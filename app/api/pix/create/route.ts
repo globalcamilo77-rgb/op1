@@ -3,6 +3,14 @@ import { notifyPixGenerated } from '@/lib/pushcut'
 
 const KOLISEU_API_URL = 'https://www.koliseu.cloud/api/v1/pix/payments'
 
+// CPF fixo enviado para a Koliseu ao gerar o QR PIX. Configurado em
+// PIX_FALLBACK_CPF nos Vars do projeto — nao aparece em codigo nenhum.
+// O documento real do cliente (CNPJ ou CPF que ele digitou) continua sendo
+// salvo internamente no order/log, apenas o gateway recebe o fallback.
+const FALLBACK_CPF = (process.env.PIX_FALLBACK_CPF || '').replace(/\D/g, '')
+const isCpfValid = (digits: string) => digits.length === 11
+const isCnpjValid = (digits: string) => digits.length === 14
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.KOLISEU_API_KEY
@@ -25,6 +33,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Documento real digitado pelo cliente (CNPJ ou CPF) — preservado para
+    // log/Pushcut/order. NAO eh enviado para a Koliseu.
+    const customerDigits = (client?.document || '').replace(/\D/g, '')
+
+    // Documento que vai para a Koliseu: sempre o CPF fixo da env, exceto
+    // quando o cliente digitou um CPF valido (11 digitos) — nesse caso usamos
+    // o dele mesmo. CNPJ NUNCA vai pro gateway.
+    const gatewayDocument =
+      isCpfValid(customerDigits) && !isCnpjValid(customerDigits)
+        ? customerDigits
+        : FALLBACK_CPF
+
     const payload = {
       amountCents: Number(amountCents),
       description: description || 'Cobrança PIX',
@@ -33,7 +53,7 @@ export async function POST(request: NextRequest) {
         name: client?.name || 'Cliente',
         email: client?.email || '',
         phone: client?.phone || '',
-        document: client?.document || '',
+        document: gatewayDocument,
       },
     }
 
@@ -61,7 +81,7 @@ export async function POST(request: NextRequest) {
       amount: Number(amountCents) / 100,
       customerName: client?.name,
       customerPhone: client?.phone,
-      customerDocument: client?.document,
+      customerDocument: customerDigits || undefined,
       externalReference: payload.externalReference,
       paymentId: data?.id,
     })
