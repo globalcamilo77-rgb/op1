@@ -22,7 +22,7 @@ export default function CarrinhoPage() {
 
   const visibleItems = mounted ? items : []
   const subtotal = visibleItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
-  const shipping = visibleItems.length > 0 ? 49.9 : 0
+  const shipping = visibleItems.length > 0 ? 20 : 0
   const total = subtotal + shipping
 
   return (
