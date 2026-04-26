@@ -98,27 +98,52 @@ export async function GET(req: NextRequest) {
 
     if (isPaid) {
       const supabase = getSupabase()
-      const externalReference =
+      
+      // Tenta extrair externalReference de varios caminhos possiveis
+      let externalReference =
         extractField(raw, ['external_reference']) ||
         extractField(raw, ['externalReference']) ||
         extractField(raw, ['data', 'external_reference']) ||
-        extractField(raw, ['data', 'externalReference'])
+        extractField(raw, ['data', 'externalReference']) ||
+        extractField(raw, ['payment', 'external_reference']) ||
+        extractField(raw, ['payment', 'externalReference'])
 
       let alreadyProcessed = false
+      let orderFromDb: { id: string; status: string } | null = null
 
-      if (supabase && externalReference) {
-        const { data: orderRow } = await supabase
+      // Se nao achou externalReference no payload, tenta buscar pelo paymentId
+      // (pix_transaction_id) no Supabase
+      if (supabase && !externalReference) {
+        const { data: orderByPix } = await supabase
           .from('orders')
-          .select('status')
-          .eq('id', externalReference)
+          .select('id, status')
+          .eq('pix_transaction_id', paymentId)
           .maybeSingle()
-
-        if (orderRow?.status === 'paid') {
-          alreadyProcessed = true
+        if (orderByPix) {
+          externalReference = orderByPix.id
+          orderFromDb = orderByPix
+          if (orderByPix.status === 'paid') {
+            alreadyProcessed = true
+          }
         }
       }
 
-      if (!alreadyProcessed) {
+      // Se achou externalReference mas nao buscou ainda, verifica status
+      if (supabase && externalReference && !orderFromDb) {
+        const { data: orderRow } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('id', externalReference)
+          .maybeSingle()
+        if (orderRow) {
+          orderFromDb = orderRow
+          if (orderRow.status === 'paid') {
+            alreadyProcessed = true
+          }
+        }
+      }
+
+      if (!alreadyProcessed && externalReference) {
         // Idempotencia: chamamos o processador uma unica vez por pedido.
         // Ele marca status=paid no Supabase, dispara Pushcut, bloqueia IP e
         // loga o evento. Em chamadas subsequentes, "alreadyProcessed" trava.
@@ -127,6 +152,7 @@ export async function GET(req: NextRequest) {
           userAgent: req.headers.get('user-agent') || '',
         }
         try {
+          console.log('[pix-status] Disparando webhook local para pedido:', externalReference)
           await processPixWebhook(
             {
               event: 'payment.confirmed',
@@ -138,9 +164,12 @@ export async function GET(req: NextRequest) {
             },
             ctx,
           )
+          console.log('[pix-status] Webhook local processado com sucesso')
         } catch (err) {
           console.error('[pix-status] erro ao disparar webhook local:', err)
         }
+      } else if (!externalReference) {
+        console.warn('[pix-status] Pagamento confirmado mas externalReference nao encontrado:', paymentId)
       }
     }
 

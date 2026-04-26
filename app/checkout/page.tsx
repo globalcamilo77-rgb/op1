@@ -359,6 +359,7 @@ export default function CheckoutPage() {
       status: paymentMethod === 'pix' ? 'awaiting_payment' : 'pending',
       items: visibleItems,
       tracking: trackingParams,
+      pixTransactionId: gatewayCharge?.id || null,
     })
     setDbOrderId(newOrderId)
 
