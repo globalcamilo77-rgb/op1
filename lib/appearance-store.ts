@@ -69,22 +69,18 @@ export const useAppearanceStore = create<AppearanceState>()(
           }
         }
         if (version < 4) {
-          // Limpa textos legados que continham telefones do seed antigo
-          if (
-            state.notificationBarText &&
-            state.notificationBarText.includes('4572-4545')
-          ) {
-            state.notificationBarText = DEFAULT_APPEARANCE.notificationBarText
-          }
+          // Limpa telefone do rodape do seed legado
           const phoneDigits = (state.footerPhone || '').replace(/\D/g, '')
-          if (phoneDigits === '08003336722' || phoneDigits === '0800333672') {
+          if (phoneDigits.startsWith('0800333')) {
             state.footerPhone = ''
           }
         }
         if (version < 5) {
-          // Bump v5: zera o footerWhatsapp para forcar configuracao manual no
-          // /adminlr/aparencia, ja que o numero anterior nao deve mais ser usado.
+          // Bump v5: zera o texto da barra e o WhatsApp do rodape para forcar
+          // configuracao manual no /adminlr/aparencia, ja que os valores
+          // anteriores nao devem mais ser usados.
           state.footerWhatsapp = ''
+          state.notificationBarText = DEFAULT_APPEARANCE.notificationBarText
         }
         return state as AppearanceSettings
       },
