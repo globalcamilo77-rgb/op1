@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   const isGenerated = event === 'payment.created' || event === 'pix.generated'
 
   // Buscar pedido relacionado (se houver)
-  let order: {
+  type OrderRow = {
     id: string
     customer_ip: string | null
     customer_name: string | null
@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
     customer_email?: string | null
     customer_document: string | null
     total: number | null
-  } | null = null
+  }
+  let order: OrderRow | null = null
 
   if (supabase && data.externalReference) {
     const { data: orderData } = await supabase
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       .select('id, customer_ip, customer_name, customer_phone, customer_email, customer_document, total')
       .eq('id', data.externalReference)
       .maybeSingle()
-    order = orderData as typeof order
+    order = (orderData as unknown as OrderRow | null) ?? null
   }
 
   // IP do cliente: prioriza o que vem do pedido, depois o do request, depois o do payload
