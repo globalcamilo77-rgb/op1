@@ -553,10 +553,10 @@ export default function CheckoutPage() {
                       </div>
                       <div className="md:col-span-2">
                         <label className="text-xs font-semibold text-muted-foreground">
-                          CNPJ *
+                          CNPJ ou CPF *
                         </label>
                         <Input
-                          placeholder="00.000.000/0000-00"
+                          placeholder="CNPJ 00.000.000/0000-00 ou CPF 000.000.000-00"
                           value={buyerDocument}
                           onChange={(e) =>
                             setBuyerDocument(formatDocument(e.target.value))
@@ -565,8 +565,8 @@ export default function CheckoutPage() {
                           className="mt-1 font-mono"
                         />
                         <p className="text-[11px] text-muted-foreground mt-1">
-                          Pessoa fisica? Pode digitar o CPF normalmente que tambem
-                          aceitamos.
+                          A mascara se ajusta automaticamente conforme voce digita
+                          (CPF com 11 digitos, CNPJ com 14).
                         </p>
                       </div>
                       <div>
