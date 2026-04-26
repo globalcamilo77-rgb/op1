@@ -52,13 +52,13 @@ export const cities = [
 ]
 
 export const brands = [
-  { id: '1', name: 'Votoran', initial: 'V' },
-  { id: '2', name: 'Quartzolit', initial: 'Q' },
-  { id: '3', name: 'Tigre', initial: 'T' },
-  { id: '4', name: 'Gerdau', initial: 'G' },
-  { id: '5', name: 'Votomassa', initial: 'VM' },
-  { id: '6', name: 'Forlev', initial: 'F' },
-  { id: '7', name: 'Caue', initial: 'C' },
+  { id: '1', name: 'Votoran', wordmark: 'VOTORAN', color: '#E63125', italic: false },
+  { id: '2', name: 'Quartzolit', wordmark: 'QUARTZOLIT', color: '#003A73', italic: false },
+  { id: '3', name: 'Tigre', wordmark: 'TIGRE', color: '#F5810F', italic: true },
+  { id: '4', name: 'Gerdau', wordmark: 'GERDAU', color: '#0033A1', italic: false },
+  { id: '5', name: 'Votomassa', wordmark: 'VOTOMASSA', color: '#2C3E50', italic: false },
+  { id: '6', name: 'Forlev', wordmark: 'FORLEV', color: '#00703C', italic: false },
+  { id: '7', name: 'Caue', wordmark: 'CAUE', color: '#A30019', italic: false },
 ]
 
 export const features = [
