@@ -23,21 +23,42 @@ export async function listWhatsAppContacts(): Promise<WhatsAppContact[]> {
   }))
 }
 
+/**
+ * Sincroniza a lista completa de contatos do WhatsApp com o Supabase.
+ * Deleta os que sumiram da lista e faz upsert dos restantes. Pensado
+ * para chamadas vindas do /adminlr/whatsapp depois de qualquer mudanca.
+ */
 export async function upsertWhatsAppContacts(contacts: WhatsAppContact[]): Promise<void> {
   const supabase = getSupabase()
   if (!supabase) throw new Error('Supabase nao configurado')
-  if (contacts.length === 0) return
 
-  const { error } = await supabase.from(TABLE_CONTACTS).upsert(
-    contacts.map((c) => ({
+  // 1) Apagar do banco contatos que nao estao mais na lista
+  const ids = contacts.map((c) => c.id)
+  if (ids.length === 0) {
+    // Lista vazia: limpa toda a tabela
+    const { error } = await supabase.from(TABLE_CONTACTS).delete().neq('id', '__nope__')
+    if (error) throw error
+    return
+  }
+
+  const { error: delError } = await supabase
+    .from(TABLE_CONTACTS)
+    .delete()
+    .not('id', 'in', `(${ids.map((id) => `"${id.replace(/"/g, '')}"`).join(',')})`)
+  if (delError) throw delError
+
+  // 2) Upsert dos contatos atuais
+  const { error: upError } = await supabase.from(TABLE_CONTACTS).upsert(
+    contacts.map((c, idx) => ({
       id: c.id,
       label: c.label,
       number: c.number,
       active: c.active,
+      position: idx,
     })),
     { onConflict: 'id' },
   )
-  if (error) throw error
+  if (upError) throw upError
 }
 
 export async function fetchWhatsAppSettings(): Promise<WhatsAppSettings | null> {
