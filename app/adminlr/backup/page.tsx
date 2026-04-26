@@ -1,16 +1,24 @@
-﻿'use client'
+'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Inbox } from 'lucide-react'
+import { Database, Download, Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { AdminTopbar } from '@/components/admin/topbar'
-import { StatusBadge } from '@/components/admin/data-table'
-import { backups } from '@/lib/mock-data'
 import { useAuthStore } from '@/lib/store'
+
+interface RestoreResult {
+  ok: boolean
+  results: Record<string, { restored?: number; error?: string }>
+}
 
 export default function BackupPage() {
   const router = useRouter()
   const { user } = useAuthStore()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [downloading, setDownloading] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (user?.role !== 'superadmin') {
@@ -22,85 +30,146 @@ export default function BackupPage() {
     return null
   }
 
-  const backupColumns = [
-    { key: 'date', label: 'Data' },
-    { key: 'size', label: 'Tamanho' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (backup: typeof backups[0]) => <StatusBadge status={backup.status} />,
-    },
-    {
-      key: 'actions',
-      label: 'Acoes',
-      render: () => (
-        <div className="flex gap-2">
-          <button className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded hover:bg-muted transition-colors">
-            Download
-          </button>
-          <button className="px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded hover:opacity-90 transition-opacity">
-            Deletar
-          </button>
-        </div>
-      ),
-    },
-  ]
+  const handleDownload = async () => {
+    setDownloading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/backup')
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `alfa-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao gerar backup')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const handleRestore = async (file: File) => {
+    if (
+      !window.confirm(
+        `Restaurar backup do arquivo "${file.name}"? Os dados existentes com mesmo ID serao sobrescritos.`,
+      )
+    )
+      return
+    setRestoring(true)
+    setError(null)
+    setRestoreResult(null)
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+      const res = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(json),
+      })
+      const data = (await res.json()) as RestoreResult
+      if (!res.ok) {
+        throw new Error('Falha ao restaurar')
+      }
+      setRestoreResult(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'JSON invalido')
+    } finally {
+      setRestoring(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   return (
     <>
       <AdminTopbar title="Backup" />
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="bg-card p-6 rounded-lg shadow-sm">
-          <h2 className="text-lg font-semibold mb-6 text-foreground">Gerenciar Backups</h2>
-
-          <button className="px-4 py-2 bg-[var(--orange-primary)] text-white rounded text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors mb-6">
-            + Executar Backup
-          </button>
-
-          {backups.length === 0 ? (
-            <div className="py-12 flex flex-col items-center text-center border border-dashed border-border rounded-lg">
-              <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mb-3">
-                <Inbox size={24} className="text-muted-foreground" />
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                Nenhum backup registrado
-              </p>
-              <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                Os backups aparecerão aqui após a primeira execução.
+      <div className="flex-1 p-6 overflow-y-auto space-y-6">
+        <div className="bg-card p-6 rounded-lg border border-border">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-[var(--orange-primary)]/10 flex items-center justify-center shrink-0">
+              <Database size={20} className="text-[var(--orange-primary)]" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Backup completo do banco</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Inclui cidades, contatos, aparencia, produtos, pedidos, leads, eventos, bloqueios de IP e log de webhook PIX.
               </p>
             </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-secondary">
-                  {backupColumns.map((col) => (
-                    <th
-                      key={col.key}
-                      className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground border-b border-border"
-                    >
-                      {col.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {backups.map((backup) => (
-                  <tr key={backup.id} className="hover:bg-secondary/50 transition-colors">
-                    {backupColumns.map((col) => (
-                      <td
-                        key={`${backup.id}-${col.key}`}
-                        className="px-4 py-3 text-sm text-foreground border-b border-border"
-                      >
-                        {col.render
-                          ? col.render(backup)
-                          : String(backup[col.key as keyof typeof backup] ?? '')}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--orange-primary)] text-white rounded-lg text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors disabled:opacity-60"
+            >
+              <Download size={16} />
+              {downloading ? 'Gerando backup...' : 'Baixar backup agora (JSON)'}
+            </button>
+
+            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:bg-muted transition-colors cursor-pointer">
+              <Upload size={16} />
+              {restoring ? 'Restaurando...' : 'Restaurar de arquivo JSON'}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json"
+                className="hidden"
+                disabled={restoring}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleRestore(file)
+                }}
+              />
+            </label>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2 text-sm text-destructive">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
           )}
+
+          {restoreResult && (
+            <div className="mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900">
+              <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-2">
+                <CheckCircle2 size={16} />
+                Restauracao concluida
+              </div>
+              <ul className="text-xs text-foreground/80 space-y-1">
+                {Object.entries(restoreResult.results).map(([table, result]) => (
+                  <li key={table} className="flex items-center justify-between gap-2">
+                    <span className="font-mono">{table}</span>
+                    <span
+                      className={
+                        result.error
+                          ? 'text-destructive'
+                          : result.restored
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {result.error ? `erro: ${result.error}` : `${result.restored ?? 0} registros`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card p-6 rounded-lg border border-border">
+          <h3 className="text-sm font-semibold text-foreground mb-2">Recomendacoes</h3>
+          <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
+            <li>Faca backup antes de importar bases novas ou rodar migrations grandes.</li>
+            <li>Guarde o JSON num lugar seguro - ele contem dados de clientes.</li>
+            <li>Restaurar nao deleta dados extras: faz upsert por id (sobrescreve duplicados).</li>
+          </ul>
         </div>
       </div>
     </>
