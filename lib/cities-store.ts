@@ -38,6 +38,10 @@ export interface CityPageInput {
 
 interface CitiesState {
   cities: CityPage[]
+  /** True quando os dados foram carregados do Supabase ao menos uma vez. */
+  hydrated: boolean
+  /** True enquanto uma sincronizacao com Supabase esta em andamento. */
+  syncing: boolean
   addCity: (input: CityPageInput) => CityPage
   updateCity: (id: string, updates: Partial<Omit<CityPage, 'id' | 'createdAt'>>) => void
   removeCity: (id: string) => void
@@ -46,6 +50,14 @@ interface CitiesState {
   removeContact: (cityId: string, contactId: string) => void
   getCityBySlug: (slug: string) => CityPage | undefined
   getContactForCity: (slug: string) => CityContact | null
+  /** Carrega cidades + contatos do Supabase. Substitui o estado local. */
+  loadFromSupabase: () => Promise<void>
+  /** Persiste a cidade no Supabase via API publica. */
+  pushCityToSupabase: (cityId: string) => Promise<void>
+  /** Apaga a cidade no Supabase via API publica. */
+  deleteFromSupabase: (cityId: string) => Promise<void>
+  /** Persiste todas as cidades no Supabase. */
+  syncAllToSupabase: () => Promise<void>
 }
 
 const sanitizeNumber = (value: string) => value.replace(/\D/g, '')
@@ -68,6 +80,8 @@ export const useCitiesStore = create<CitiesState>()(
   persist(
     (set, get) => ({
       cities: INITIAL_CITIES,
+      hydrated: false,
+      syncing: false,
 
       addCity: (input) => {
         const baseSlug = slugify(input.slug || input.cityName)
@@ -186,33 +200,83 @@ export const useCitiesStore = create<CitiesState>()(
       getContactForCity: (slug) => {
         const city = get().cities.find((c) => c.slug === slug)
         if (!city || !city.active) return null
-        
-        // Filtrar apenas contatos ativos
+
         const activeContacts = city.contacts.filter((c) => c.active && c.number)
         if (activeContacts.length === 0) return null
-        
-        // Extrair DDD da cidade dos contatos (pegar o DDD mais comum)
+
         const dddCounts: Record<string, number> = {}
         activeContacts.forEach((c) => {
           const digits = c.number.replace(/\D/g, '')
-          // DDD esta nas posicoes 2-3 (depois do 55)
           const ddd = digits.length >= 4 ? digits.slice(2, 4) : ''
           if (ddd) {
             dddCounts[ddd] = (dddCounts[ddd] || 0) + 1
           }
         })
-        
-        // Se todos os contatos tem o mesmo DDD, fazer rotacao
+
         const uniqueDDDs = Object.keys(dddCounts)
         if (uniqueDDDs.length === 1) {
-          // Todos os numeros tem o mesmo DDD - fazer rotacao
           const windowMs = Math.max(1, city.rotationIntervalMinutes) * 60 * 1000
           const currentWindow = Math.floor(Date.now() / windowMs)
           return activeContacts[currentWindow % activeContacts.length]
         }
-        
-        // DDDs diferentes - nao fazer rotacao, retornar o primeiro
+
         return activeContacts[0]
+      },
+
+      loadFromSupabase: async () => {
+        if (typeof window === 'undefined') return
+        if (get().syncing) return
+        set({ syncing: true })
+        try {
+          const res = await fetch('/api/cities', { cache: 'no-store' })
+          if (!res.ok) throw new Error(`status ${res.status}`)
+          const data = (await res.json()) as { cities?: CityPage[] }
+          if (Array.isArray(data.cities)) {
+            set({ cities: data.cities, hydrated: true })
+          } else {
+            set({ hydrated: true })
+          }
+        } catch (error) {
+          console.error('[cities-store] loadFromSupabase falhou:', error)
+        } finally {
+          set({ syncing: false })
+        }
+      },
+
+      pushCityToSupabase: async (cityId) => {
+        const city = get().cities.find((c) => c.id === cityId)
+        if (!city) return
+        try {
+          await fetch('/api/cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city }),
+          })
+        } catch (error) {
+          console.error('[cities-store] pushCityToSupabase falhou:', error)
+        }
+      },
+
+      deleteFromSupabase: async (cityId) => {
+        try {
+          await fetch(`/api/cities?id=${encodeURIComponent(cityId)}`, { method: 'DELETE' })
+        } catch (error) {
+          console.error('[cities-store] deleteFromSupabase falhou:', error)
+        }
+      },
+
+      syncAllToSupabase: async () => {
+        const cities = get().cities
+        if (cities.length === 0) return
+        try {
+          await fetch('/api/cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cities }),
+          })
+        } catch (error) {
+          console.error('[cities-store] syncAllToSupabase falhou:', error)
+        }
       },
     }),
     {

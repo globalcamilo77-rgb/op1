@@ -9,6 +9,7 @@ import { AnalyticsTracker } from '@/components/store/analytics-tracker'
 import { WhatsAppButton } from '@/components/store/whatsapp-button'
 import { ActiveCityBanner } from '@/components/store/active-city-banner'
 import { TrackingParamsCapture } from '@/components/tracking-params-capture'
+import { StoresHydrator } from '@/components/stores-hydrator'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -67,6 +68,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
+        <StoresHydrator />
         <AppearanceProvider />
         <AnalyticsTracker />
         <Suspense fallback={null}>

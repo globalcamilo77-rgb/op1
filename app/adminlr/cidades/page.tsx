@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -71,9 +71,24 @@ export default function AdminCidadesPage() {
   const addContact = useCitiesStore((state) => state.addContact)
   const updateContact = useCitiesStore((state) => state.updateContact)
   const removeContact = useCitiesStore((state) => state.removeContact)
+  const loadFromSupabase = useCitiesStore((state) => state.loadFromSupabase)
+  const syncAllToSupabase = useCitiesStore((state) => state.syncAllToSupabase)
+  const deleteFromSupabase = useCitiesStore((state) => state.deleteFromSupabase)
 
   const [hydrated, setHydrated] = useState(false)
-  useEffect(() => setHydrated(true), [])
+  useEffect(() => {
+    setHydrated(true)
+    loadFromSupabase()
+  }, [loadFromSupabase])
+
+  // Auto-sync com Supabase: cada mudanca em cities dispara um push debounced (600ms).
+  useEffect(() => {
+    if (!hydrated) return
+    const timeoutId = window.setTimeout(() => {
+      syncAllToSupabase()
+    }, 600)
+    return () => window.clearTimeout(timeoutId)
+  }, [cities, hydrated, syncAllToSupabase])
 
   useEffect(() => {
     if (user && user.role !== 'superadmin') router.push('/adminlr')
@@ -292,6 +307,7 @@ export default function AdminCidadesPage() {
               onRemove={() => {
                 if (!window.confirm(`Remover ${city.cityName} (${city.slug})?`)) return
                 removeCity(city.id)
+                deleteFromSupabase(city.id)
               }}
               onAddContact={(contact) => addContact(city.id, contact)}
               onUpdateContact={(contactId, updates) => updateContact(city.id, contactId, updates)}
