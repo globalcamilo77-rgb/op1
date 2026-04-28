@@ -92,6 +92,22 @@ export default function IpsPage() {
     }
   }
 
+  const handleClearAll = async () => {
+    if (!confirm(`Tem certeza que deseja desbloquear TODOS os ${blockedIps.length} IPs?`)) {
+      return
+    }
+    try {
+      const res = await fetch('/api/ip-blocks/clear', {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        fetchData()
+      }
+    } catch (err) {
+      console.error('Erro ao limpar IPs:', err)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -137,11 +153,21 @@ export default function IpsPage() {
 
         {/* IPs Bloqueados */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Ban size={20} className="text-red-500" />
               IPs Bloqueados ({blockedIps.length})
             </CardTitle>
+            {blockedIps.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleClearAll}
+              >
+                <Trash2 size={16} className="mr-2" />
+                Limpar Todos
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {blockedIps.length === 0 ? (
