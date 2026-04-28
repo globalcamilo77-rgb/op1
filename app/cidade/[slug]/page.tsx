@@ -13,6 +13,7 @@ import { Footer } from '@/components/store/footer'
 import { ServiceAreaDialog } from '@/components/store/service-area-dialog'
 import { CityActivator } from '@/components/store/city-activator'
 import { CityContextBanner } from '@/components/store/city-context-banner'
+import { FloatingCart } from '@/components/store/floating-cart'
 import { getCityBySlug } from '@/lib/supabase-cities'
 
 /**
@@ -103,6 +104,7 @@ export default async function CityLandingPage({
 
       <Footer />
       <ServiceAreaDialog />
+      <FloatingCart />
     </div>
   )
 }

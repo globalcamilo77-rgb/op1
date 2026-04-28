@@ -7,6 +7,7 @@ import { StoreHeader } from '@/components/store/header'
 import { Footer } from '@/components/store/footer'
 import { WhatsAppButton } from '@/components/store/whatsapp-button'
 import { ServiceAreaDialog } from '@/components/store/service-area-dialog'
+import { FloatingCart } from '@/components/store/floating-cart'
 import { ProductCard } from '@/components/store/product-card'
 import { CATEGORIES } from '@/lib/categories'
 import { useProductsStore } from '@/lib/products-store'
@@ -177,8 +178,9 @@ export default function CategoryPage({ params }: { params: Promise<Params> }) {
       </main>
 
       <Footer />
-      <WhatsAppButton />
-      <ServiceAreaDialog />
-    </div>
-  )
-}
+        <WhatsAppButton />
+        <ServiceAreaDialog />
+        <FloatingCart />
+      </div>
+    )
+  }
