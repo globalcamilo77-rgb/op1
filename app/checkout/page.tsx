@@ -152,6 +152,9 @@ export default function CheckoutPage() {
   const [dbOrderId, setDbOrderId] = useState<string | null>(null)
   const [stepError, setStepError] = useState<string | null>(null)
   const [gatewayCharge, setGatewayCharge] = useState<GatewayChargeNormalized | null>(null)
+  
+  // Honeypot field - bots preenchem campos ocultos automaticamente
+  const [honeypot, setHoneypot] = useState('')
 
   useEffect(() => {
     setMounted(true)
@@ -289,6 +292,13 @@ export default function CheckoutPage() {
 
   const handleConfirmOrder = async () => {
     if (visibleItems.length === 0) return
+    
+    // Bot detection: se o honeypot estiver preenchido, e um bot
+    if (honeypot) {
+      console.log('[v0] Bot detectado via honeypot')
+      return
+    }
+    
     const err1 = validateStep1()
     if (err1) {
       setStepError(err1)
@@ -543,6 +553,18 @@ export default function CheckoutPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Honeypot - campo invisivel para detectar bots */}
+                      <input
+                        type="text"
+                        name="website_url"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                        autoComplete="off"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        className="absolute -left-[9999px] h-0 w-0 opacity-0 pointer-events-none"
+                      />
+                      
                       <div className="md:col-span-2">
                         <label className="text-xs font-semibold text-muted-foreground">
                           Nome completo *
