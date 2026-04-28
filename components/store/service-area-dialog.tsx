@@ -26,12 +26,8 @@ export function ServiceAreaDialog() {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (!mounted) return
-    if (!address && !hasDismissed) {
-      openDialog()
-    }
-  }, [mounted, address, hasDismissed, openDialog])
+  // Removido: auto-open do dialog
+  // O dialog agora so abre quando o usuario clicar no botao "Verificar Entrega"
 
   useEffect(() => {
     if (isDialogOpen) {
