@@ -324,6 +324,15 @@ export default function CheckoutPage() {
       },
     })
 
+    // Coleta IP para analise (voce decide se bloqueia no admin)
+    try {
+      fetch('/api/ip-blocks/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: '/checkout' }),
+      })
+    } catch {}
+
     if (paymentMethod === 'pix' && pixConfig.enabled) {
       const fallbackPayload = pixConfig.pixKey
         ? generatePixPayload({
