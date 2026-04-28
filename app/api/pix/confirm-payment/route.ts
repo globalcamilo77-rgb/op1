@@ -3,13 +3,16 @@ import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase credentials not configured')
+  return createClient(url, key)
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseAdmin()
     const body = await req.json()
     const { orderId, transactionId, amount, customerName, customerEmail, customerPhone, customerDocument } = body
 

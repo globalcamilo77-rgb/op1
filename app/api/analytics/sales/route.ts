@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase credentials not configured')
+  return createClient(url, key)
+}
 
 export interface PaidOrderRow {
   id: string
@@ -25,6 +27,7 @@ export interface PaidOrderRow {
  */
 export async function GET(req: NextRequest) {
   try {
+    const supabase = getSupabaseAdmin()
     const sinceParam = req.nextUrl.searchParams.get('since')
     const sinceIso = sinceParam
       ? new Date(sinceParam).toISOString()

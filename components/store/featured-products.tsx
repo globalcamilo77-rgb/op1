@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ArrowRight, Search, X } from 'lucide-react'
@@ -11,7 +11,34 @@ import { ProductCard } from './product-card'
 
 const MAX_PER_CATEGORY = 4
 
+// Wrapper com Suspense para useSearchParams
 export function FeaturedProducts() {
+  return (
+    <Suspense fallback={<FeaturedProductsSkeleton />}>
+      <FeaturedProductsInner />
+    </Suspense>
+  )
+}
+
+function FeaturedProductsSkeleton() {
+  return (
+    <section className="bg-background py-12 px-5">
+      <div className="max-w-6xl mx-auto">
+        <div className="animate-pulse">
+          <div className="h-4 w-32 bg-muted rounded mb-2" />
+          <div className="h-8 w-64 bg-muted rounded mb-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-64 bg-muted rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FeaturedProductsInner() {
   const searchParams = useSearchParams()
   const searchQuery = searchParams.get('q') || ''
   const { products, loadFromSupabase } = useProductsStore()
