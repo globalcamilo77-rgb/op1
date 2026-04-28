@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { ArrowRight, Search, X } from 'lucide-react'
 import { useProductsStore, type StoreProduct } from '@/lib/products-store'
 import { DEFAULT_APPEARANCE, useAppearanceStore } from '@/lib/appearance-store'
 import { CATEGORIES, getCategoryByName } from '@/lib/categories'
@@ -11,6 +12,8 @@ import { ProductCard } from './product-card'
 const MAX_PER_CATEGORY = 4
 
 export function FeaturedProducts() {
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('q') || ''
   const { products, loadFromSupabase } = useProductsStore()
   const eyebrow = useAppearanceStore((state) => state.featuredEyebrow)
   const title = useAppearanceStore((state) => state.featuredTitle)
@@ -23,7 +26,22 @@ export function FeaturedProducts() {
     loadFromSupabase()
   }, [loadFromSupabase])
 
-  const activeProducts = mounted ? products.filter((p) => p.active) : []
+  // Filtra produtos ativos e aplica busca se houver query
+  const activeProducts = useMemo(() => {
+    if (!mounted) return []
+    let filtered = products.filter((p) => p.active)
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      )
+    }
+    
+    return filtered
+  }, [mounted, products, searchQuery])
 
   const groupedByCategory = useMemo(() => {
     if (!mounted) return []
@@ -72,6 +90,30 @@ export function FeaturedProducts() {
     return orderedGroups
   }, [mounted, activeProducts])
 
+  // Se buscando e nao encontrou nada
+  if (mounted && searchQuery && activeProducts.length === 0) {
+    return (
+      <section className="bg-background py-12 px-5">
+        <div className="max-w-6xl mx-auto text-center">
+          <Search size={48} className="mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold text-foreground mb-2">
+            Nenhum produto encontrado para &quot;{searchQuery}&quot;
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Tente buscar por outro termo ou navegue pelas categorias.
+          </p>
+          <Link
+            href="/loja"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--orange-primary)] text-white rounded-lg hover:bg-[var(--orange-dark)] transition-colors"
+          >
+            <X size={16} />
+            Limpar busca
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
   if (mounted && activeProducts.length === 0) {
     return null
   }
@@ -80,20 +122,43 @@ export function FeaturedProducts() {
   const titleText = mounted ? title : DEFAULT_APPEARANCE.featuredTitle
   const subtitleText = mounted ? subtitle : DEFAULT_APPEARANCE.featuredSubtitle
 
+  // Se tem busca ativa, mostra titulo diferente
+  const isSearching = searchQuery.trim().length > 0
+
   return (
     <section className="bg-background py-12 px-5">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-[var(--orange-primary)] font-semibold">
-              {eyebrowText}
-            </p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-1">
-              {titleText}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{subtitleText}</p>
+        {isSearching ? (
+          <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[var(--orange-primary)] font-semibold">
+                Resultados da busca
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-1">
+                {activeProducts.length} produto{activeProducts.length !== 1 ? 's' : ''} encontrado{activeProducts.length !== 1 ? 's' : ''} para &quot;{searchQuery}&quot;
+              </h2>
+            </div>
+            <Link
+              href="/loja"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors text-sm"
+            >
+              <X size={16} />
+              Limpar busca
+            </Link>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[var(--orange-primary)] font-semibold">
+                {eyebrowText}
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-1">
+                {titleText}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">{subtitleText}</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-12">
           {groupedByCategory.map((group) => (
