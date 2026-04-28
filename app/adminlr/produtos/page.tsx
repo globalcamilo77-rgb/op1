@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useMemo, useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import {
   Plus,
   Pencil,
@@ -395,14 +396,14 @@ export default function AdminProdutosPage() {
                           <Pencil size={14} />
                           Editar
                         </button>
-                        <a
+                        <Link
                           href={`/adminlr/produtos/${encodeURIComponent(product.id)}/lp`}
                           className="inline-flex items-center gap-1 text-sm text-purple-700 hover:text-purple-900 font-semibold"
                           title="Editar Landing Page deste produto"
                         >
                           <FileText size={14} />
                           LP
-                        </a>
+                        </Link>
                         <button
                           onClick={() => removeProduct(product.id)}
                           className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700"

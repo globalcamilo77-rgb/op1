@@ -193,8 +193,9 @@ export function MainHeader() {
   }, [])
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push(`/loja?q=${encodeURIComponent(searchQuery.trim())}`)
+    const query = searchQuery.trim()
+    if (query) {
+      router.push(`/loja?q=${encodeURIComponent(query)}`)
     }
   }
 

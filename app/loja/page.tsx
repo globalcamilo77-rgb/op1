@@ -10,6 +10,7 @@ import { CitiesSection } from '@/components/store/cities-section'
 import { FaqSection } from '@/components/store/faq-section'
 import { Footer } from '@/components/store/footer'
 import { ServiceAreaDialog } from '@/components/store/service-area-dialog'
+import { FloatingCart } from '@/components/store/floating-cart'
 
 export default function LojaPage() {
   return (
@@ -33,6 +34,7 @@ export default function LojaPage() {
 
       <Footer />
       <ServiceAreaDialog />
+      <FloatingCart />
     </div>
   )
 }

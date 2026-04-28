@@ -26,7 +26,7 @@ interface AppearanceState extends AppearanceSettings {
 }
 
 export const DEFAULT_APPEARANCE: AppearanceSettings = {
-  brandName: 'Alfa',
+  brandName: 'Alfa ',
   brandHighlight: 'Construção',
   brandSuffix: ', O Mercado da Construcao',
   logoUrl: '/logo.png',

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -63,10 +63,11 @@ export default function AdminAparenciaPage() {
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
+  // Sincroniza o draft com o state quando a store hidratar
   useEffect(() => {
     setDraft(settings)
     setHydrated(true)
-  }, [])
+  }, [settings])
 
   useEffect(() => {
     if (user?.role !== 'superadmin') {
