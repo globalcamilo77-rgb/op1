@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useAddressStore } from '@/lib/address-store'
-import { ShieldCheck, Truck, Star, ArrowRight } from 'lucide-react'
+import { useWhatsAppStore } from '@/lib/whatsapp-store'
+import { useAnalyticsStore } from '@/lib/analytics-store'
+import { ShieldCheck, Truck, Star, ArrowRight, MessageCircle } from 'lucide-react'
 
 const trustBadges = [
   { icon: Star, text: 'Nota 9.7 Reclame Aqui' },
@@ -12,6 +14,20 @@ const trustBadges = [
 
 export function HeroSection() {
   const { openDialog } = useAddressStore()
+  const registerClickAndGetContact = useWhatsAppStore((s) => s.registerClickAndGetContact)
+  const trackEvent = useAnalyticsStore((s) => s.trackEvent)
+
+  const handleWhatsAppClick = () => {
+    const contact = registerClickAndGetContact()
+    if (!contact) return
+    trackEvent('lead', { meta: { type: 'hero_whatsapp_click' } })
+    const msg = 'Ola! Vi o site e gostaria de mais informacoes sobre os produtos.'
+    window.open(
+      `https://wa.me/${contact.number.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  }
 
   return (
     <section className="relative overflow-hidden bg-[var(--graphite)] text-white">
@@ -60,13 +76,20 @@ export function HeroSection() {
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-x-6 gap-y-3 mt-8">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-8">
               {trustBadges.map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-2 text-sm text-white/70">
                   <Icon size={16} className="text-[var(--orange-primary)]" />
                   <span>{text}</span>
                 </div>
               ))}
+              <button
+                onClick={handleWhatsAppClick}
+                className="flex items-center gap-2 text-sm text-white bg-[#25D366] hover:bg-[#20b858] px-4 py-2 rounded-full font-semibold transition-colors"
+              >
+                <MessageCircle size={16} />
+                Fale Conosco
+              </button>
             </div>
           </div>
 

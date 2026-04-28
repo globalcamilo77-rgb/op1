@@ -116,22 +116,26 @@ export const useAnalyticsStore = create<AnalyticsState>()(
         if (typeof window !== 'undefined') {
           void pushAnalyticsEvent(event)
 
-          // Dispara conversoes do Google Ads
-          const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag
-          if (gtag) {
-            // Conversao de COMPRA - quando o pagamento e confirmado
-            if (type === 'purchase') {
-              gtag('event', 'conversion', {
-                send_to: 'AW-18121021838/purchase',
-                value: event.value,
-                currency: 'BRL',
-                transaction_id: event.id,
-              })
-            }
+          // Envia eventos para o dataLayer (GTM captura esses eventos)
+          const dataLayer = (window as unknown as { dataLayer?: unknown[] }).dataLayer
+          if (dataLayer) {
             // Conversao de CONTATO - quando clica no WhatsApp
             if (type === 'lead') {
-              gtag('event', 'conversion', {
-                send_to: 'AW-18121021838/contact',
+              dataLayer.push({
+                event: 'whatsapp_click',
+                event_category: 'contact',
+                event_label: event.meta?.type || 'whatsapp',
+                page_path: event.path,
+              })
+            }
+            // Conversao de COMPRA - quando o pagamento e confirmado
+            if (type === 'purchase') {
+              dataLayer.push({
+                event: 'purchase',
+                event_category: 'ecommerce',
+                transaction_id: event.id,
+                value: event.value,
+                currency: 'BRL',
               })
             }
           }

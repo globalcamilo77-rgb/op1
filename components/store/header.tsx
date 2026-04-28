@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { MapPin, Search, ShoppingCart } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useShallow } from 'zustand/react/shallow'
 import { useCartStore } from '@/lib/cart-store'
 import { useAddressStore } from '@/lib/address-store'
@@ -178,6 +178,7 @@ export function HeaderTop() {
 }
 
 export function MainHeader() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [mounted, setMounted] = useState(false)
   const cartCount = useCartStore((state) => state.items.reduce((acc, item) => acc + item.quantity, 0))
@@ -193,7 +194,7 @@ export function MainHeader() {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery)
+      router.push(`/loja?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
 

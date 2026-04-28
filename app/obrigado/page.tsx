@@ -19,6 +19,7 @@ import {
 import { StoreHeader } from '@/components/store/header'
 import { Footer } from '@/components/store/footer'
 import { WhatsAppReportButton, type OrderReportItem } from './whatsapp-report-button'
+import { useWhatsAppStore } from '@/lib/whatsapp-store'
 
 declare global {
   interface Window {
@@ -115,6 +116,7 @@ function ObrigadoContent() {
   const [mounted, setMounted] = useState(false)
   const [order, setOrder] = useState<PurchaseOrder | null>(null)
   const [loading, setLoading] = useState(true)
+  const registerClickAndGetContact = useWhatsAppStore((s) => s.registerClickAndGetContact)
 
   useEffect(() => {
     setMounted(true)
@@ -574,40 +576,78 @@ function ObrigadoContent() {
                 </div>
               </section>
 
-              {/* CTA WhatsApp com relatorio do pedido */}
-              <section className="rounded-xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-emerald-700" />
-                  <h3 className="text-sm font-bold text-foreground">
-                    Confirme com nosso atendente
-                  </h3>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Clique abaixo para abrir o WhatsApp ja com o relatorio completo
-                  do seu pedido. Apenas envie a mensagem para acelerar a separacao
-                  e a entrega.
-                </p>
+              {/* CTA WhatsApp - diferente para pago vs pendente */}
+              {paid ? (
+                <section className="rounded-xl border-2 border-emerald-500/40 bg-emerald-50 p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Truck size={16} className="text-emerald-700" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Rastreie seu pedido
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Seu pagamento foi confirmado! Clique abaixo para acompanhar
+                    o status da sua entrega em tempo real pelo WhatsApp.
+                  </p>
 
-                <WhatsAppReportButton
-                  orderId={order.id}
-                  customerName={order.customer_name || 'Cliente'}
-                  customerPhone={order.customer_phone ?? undefined}
-                  customerDocument={order.customer_document ?? undefined}
-                  paymentMethod={order.payment_method || 'pix'}
-                  status={order.status || 'pending'}
-                  items={reportItems}
-                  subtotal={subtotal}
-                  shipping={shipping}
-                  discount={discount}
-                  total={total}
-                  city={notes.city ?? undefined}
-                />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const contact = registerClickAndGetContact()
+                      if (!contact) return
+                      const msg = `Ola! Gostaria de rastrear meu pedido ${order.id.slice(0, 8).toUpperCase()}\n\nNome: ${order.customer_name || 'Cliente'}\nValor: ${currency(total)}`
+                      window.open(
+                        `https://wa.me/${contact.number.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`,
+                        '_blank',
+                        'noopener,noreferrer'
+                      )
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                  >
+                    <Truck size={16} />
+                    Rastrear meu pedido
+                  </button>
 
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
-                  <Truck size={12} />
-                  <span>Atendimento humano para confirmar separacao e prazos.</span>
-                </div>
-              </section>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
+                    <Clock size={12} />
+                    <span>Resposta em ate 5 minutos durante horario comercial.</span>
+                  </div>
+                </section>
+              ) : (
+                <section className="rounded-xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={16} className="text-emerald-700" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Confirme com nosso atendente
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Clique abaixo para abrir o WhatsApp ja com o relatorio completo
+                    do seu pedido. Apenas envie a mensagem para acelerar a separacao
+                    e a entrega.
+                  </p>
+
+                  <WhatsAppReportButton
+                    orderId={order.id}
+                    customerName={order.customer_name || 'Cliente'}
+                    customerPhone={order.customer_phone ?? undefined}
+                    customerDocument={order.customer_document ?? undefined}
+                    paymentMethod={order.payment_method || 'pix'}
+                    status={order.status || 'pending'}
+                    items={reportItems}
+                    subtotal={subtotal}
+                    shipping={shipping}
+                    discount={discount}
+                    total={total}
+                    city={notes.city ?? undefined}
+                  />
+
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
+                    <Truck size={12} />
+                    <span>Atendimento humano para confirmar separacao e prazos.</span>
+                  </div>
+                </section>
+              )}
 
               <Link
                 href="/loja"

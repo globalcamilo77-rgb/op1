@@ -120,20 +120,15 @@ export default function BrandPage({ params }: { params: Promise<Params> }) {
               <span className="text-foreground font-medium">{brand?.name ?? slug}</span>
             </nav>
 
-            <div className="mt-3 flex items-end justify-between gap-4 flex-wrap">
+              <div className="mt-3 flex items-end justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-4">
                 {brand && (
-                  <div
-                    className={`bg-background border border-border rounded-lg px-5 py-3 ${
-                      brand.italic ? 'italic' : ''
-                    }`}
-                  >
-                    <span
-                      className="font-extrabold tracking-tight leading-none text-2xl"
-                      style={{ color: brand.color, letterSpacing: '-0.02em' }}
-                    >
-                      {brand.wordmark}
-                    </span>
+                  <div className="bg-background border border-border rounded-lg p-3">
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="h-12 w-auto object-contain"
+                    />
                   </div>
                 )}
                 <div>
