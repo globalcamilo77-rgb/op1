@@ -23,26 +23,61 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'AlfaConstrução - Melhores orcamentos com entrega rapida',
-  description: 'O Mercado da Construcao. Compre materiais de construcao com os melhores precos e entrega rapida na sua regiao.',
+  title: {
+    default: 'AlfaConstrucao - Materiais de Construcao com Entrega Rapida',
+    template: '%s | AlfaConstrucao',
+  },
+  description: 'Compre materiais de construcao online: cimento, tijolos, argamassa, tubos, vergalhoes e mais. Melhores precos e entrega rapida na sua regiao. Atendimento via WhatsApp.',
+  keywords: [
+    'materiais de construcao',
+    'cimento',
+    'tijolos',
+    'argamassa',
+    'tubos PVC',
+    'vergalhao',
+    'areia',
+    'brita',
+    'construcao civil',
+    'loja de construcao',
+    'entrega de materiais',
+  ],
+  authors: [{ name: 'AlfaConstrucao' }],
+  creator: 'AlfaConstrucao',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: [{ url: '/logo.png', type: 'image/png' }],
     apple: '/logo.png',
     shortcut: '/logo.png',
   },
   openGraph: {
-    title: 'AlfaConstrução - Materiais para Construção',
-    description:
-      'O Mercado da Construcao. Melhores precos e entrega rapida na sua regiao.',
-    images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'AlfaConstrução' }],
+    title: 'AlfaConstrucao - Materiais de Construcao',
+    description: 'Compre materiais de construcao online com os melhores precos e entrega rapida na sua regiao.',
+    images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'AlfaConstrucao' }],
     type: 'website',
     locale: 'pt_BR',
+    siteName: 'AlfaConstrucao',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AlfaConstrução - Materiais para Construção',
+    title: 'AlfaConstrucao - Materiais de Construcao',
     description: 'Melhores precos e entrega rapida na sua regiao.',
     images: ['/logo.png'],
+  },
+  verification: {
+    google: 'adicione-seu-codigo-aqui',
+  },
+  alternates: {
+    canonical: 'https://alfaconstrucao.com.br',
   },
 }
 
@@ -57,6 +92,39 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>
+        {/* Preconnect para recursos externos - melhora performance */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://www.clarity.ms" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.clarity.ms" />
+        
+        {/* Dados estruturados - Schema.org */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Store',
+              name: 'AlfaConstrucao',
+              description: 'Loja de materiais de construcao com entrega rapida',
+              url: 'https://alfaconstrucao.com.br',
+              logo: 'https://alfaconstrucao.com.br/logo.png',
+              priceRange: '$$',
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'BR',
+              },
+              sameAs: [],
+              openingHoursSpecification: {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                opens: '08:00',
+                closes: '18:00',
+              },
+            }),
+          }}
+        />
+        
         {/* Google Tag Manager */}
         <Script id="gtm-init" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

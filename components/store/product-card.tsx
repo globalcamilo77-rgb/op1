@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
+import Image from 'next/image'
 import { Check, MessageCircle, ShoppingCart, Star } from 'lucide-react'
 import { QuantityPicker } from './quantity-picker'
 import type { StoreProduct } from '@/lib/products-store'
@@ -17,7 +18,7 @@ interface ProductCardProps {
   showSubcategoryBadge?: boolean
 }
 
-export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, showSubcategoryBadge }: ProductCardProps) {
   const { addItem } = useCartStore()
   const trackEvent = useAnalyticsStore((state) => state.trackEvent)
   const registerClickAndGetContact = useWhatsAppStore((s) => s.registerClickAndGetContact)
@@ -73,18 +74,20 @@ export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps)
     <div className="group bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-lg hover:-translate-y-1 hover:border-[var(--orange-primary)]/40">
       <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
         {product.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover transition-transform group-hover:scale-105"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
             Sem imagem
           </div>
         )}
-        <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[var(--orange-primary)] text-white px-2.5 py-1 rounded-md shadow-sm">
+        <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[var(--orange-primary)] text-white px-2.5 py-1 rounded-md shadow-sm z-10">
           {badgeText}
         </span>
       </div>
@@ -154,4 +157,6 @@ export function ProductCard({ product, showSubcategoryBadge }: ProductCardProps)
       </div>
     </div>
   )
-}
+})
+
+ProductCard.displayName = 'ProductCard'
