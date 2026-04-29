@@ -11,6 +11,7 @@ import { FaqSection } from '@/components/store/faq-section'
 import { Footer } from '@/components/store/footer'
 import { ServiceAreaDialog } from '@/components/store/service-area-dialog'
 import { FloatingCart } from '@/components/store/floating-cart'
+import { PromoPopup } from '@/components/store/promo-popup'
 
 export default function LojaPage() {
   return (
@@ -35,6 +36,7 @@ export default function LojaPage() {
       <Footer />
       <ServiceAreaDialog />
       <FloatingCart />
+      <PromoPopup />
     </div>
   )
 }

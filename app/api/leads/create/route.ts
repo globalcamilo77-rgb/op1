@@ -90,11 +90,25 @@ export async function POST(req: NextRequest) {
 
     // Montar URL do WhatsApp
     let whatsapp_url: string | null = null
-    if (whatsapp_number) {
-      const numberClean = String(whatsapp_number).replace(/\D/g, '')
+    let numberToUse = whatsapp_number
+
+    // Se nao foi passado numero, busca um ativo do banco
+    if (!numberToUse) {
+      const { data: contacts } = await supabase
+        .from('whatsapp_contacts')
+        .select('number')
+        .eq('active', true)
+        .limit(1)
+      if (contacts && contacts.length > 0) {
+        numberToUse = contacts[0].number
+      }
+    }
+
+    if (numberToUse) {
+      const numberClean = String(numberToUse).replace(/\D/g, '')
       const text =
         message ||
-        `Ola ${name}! Recebi seu pedido de orcamento. Posso te ajudar com material de construcao?`
+        `Ola! Sou ${name}, vim pelo site e gostaria de um orcamento!`
       whatsapp_url = `https://wa.me/${numberClean}?text=${encodeURIComponent(text)}`
     }
 
