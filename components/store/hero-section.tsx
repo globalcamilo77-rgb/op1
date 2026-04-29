@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useAddressStore } from '@/lib/address-store'
 import { useWhatsAppStore } from '@/lib/whatsapp-store'
 import { useAnalyticsStore } from '@/lib/analytics-store'
@@ -60,20 +61,13 @@ export function HeroSection() {
             </p>
 
             <div className="flex flex-wrap gap-3 mt-8">
-              <button
-                onClick={() => {
-                  const productsSection = document.getElementById('produtos')
-                  if (productsSection) {
-                    productsSection.scrollIntoView({ behavior: 'smooth' })
-                  } else {
-                    window.location.href = '/loja#produtos'
-                  }
-                }}
-                className="inline-flex items-center gap-2 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white px-7 py-3.5 rounded-lg font-bold text-sm shadow-lg shadow-[var(--orange-primary)]/30 transition-all hover:shadow-xl hover:shadow-[var(--orange-primary)]/40 hover:-translate-y-0.5 cursor-pointer"
+              <Link
+                href="/loja#produtos"
+                className="inline-flex items-center gap-2 bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] text-white px-7 py-3.5 rounded-lg font-bold text-sm shadow-lg shadow-[var(--orange-primary)]/30 transition-all hover:shadow-xl hover:shadow-[var(--orange-primary)]/40 hover:-translate-y-0.5"
               >
                 Ver Produtos Agora
                 <ArrowRight size={16} />
-              </button>
+              </Link>
               <button
                 onClick={() => openDialog()}
                 className="border-2 border-white/25 hover:border-white/50 text-white px-7 py-3.5 rounded-lg font-semibold text-sm hover:bg-white/5 transition-colors"
