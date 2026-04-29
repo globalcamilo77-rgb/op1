@@ -195,6 +195,13 @@ export function MainHeader() {
   const handleSearch = () => {
     const query = searchQuery.trim()
     if (query) {
+      // Registra a pesquisa no banco (fire and forget)
+      fetch('/api/search/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      }).catch(() => {})
+      
       router.push(`/loja?q=${encodeURIComponent(query)}`)
     }
   }

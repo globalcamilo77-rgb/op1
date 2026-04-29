@@ -15,6 +15,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Loader2,
+  Search,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -189,6 +190,13 @@ export default function AdminDashboard() {
                   >
                     Configurar PIX
                     <ArrowRight size={14} />
+                  </Link>
+                  <Link
+                    href="/adminlr/pesquisas"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-border bg-background hover:bg-secondary rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    <Search size={14} />
+                    Ver Pesquisas
                   </Link>
                 </div>
               </div>

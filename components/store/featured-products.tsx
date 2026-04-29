@@ -117,6 +117,20 @@ function FeaturedProductsInner() {
     return orderedGroups
   }, [mounted, activeProducts])
 
+  // Registra resultados da busca quando ha query
+  useEffect(() => {
+    if (mounted && searchQuery.trim()) {
+      fetch('/api/search/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          query: searchQuery.trim(), 
+          results_count: activeProducts.length 
+        }),
+      }).catch(() => {})
+    }
+  }, [mounted, searchQuery, activeProducts.length])
+
   // Se buscando e nao encontrou nada
   if (mounted && searchQuery && activeProducts.length === 0) {
     return (

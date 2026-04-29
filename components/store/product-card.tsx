@@ -165,28 +165,31 @@ export const ProductCard = memo(function ProductCard({ product, showSubcategoryB
         </button>
       </div>
 
-      {/* Modal de Detalhes */}
+      {/* Modal de Detalhes - Responsivo */}
       {showDetails && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setShowDetails(false)}
         >
           <div 
-            className="bg-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="bg-card rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Handle de arraste mobile */}
+            <div className="sm:hidden w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mt-3 mb-2" />
+            
             <div className="relative">
               {product.image ? (
-                <div className="relative aspect-video">
+                <div className="relative aspect-[4/3] sm:aspect-video">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover rounded-t-2xl"
+                    className="object-cover sm:rounded-t-2xl"
                   />
                 </div>
               ) : (
-                <div className="aspect-video bg-secondary rounded-t-2xl flex items-center justify-center text-muted-foreground">
+                <div className="aspect-[4/3] sm:aspect-video bg-secondary sm:rounded-t-2xl flex items-center justify-center text-muted-foreground">
                   Sem imagem
                 </div>
               )}
@@ -196,13 +199,13 @@ export const ProductCard = memo(function ProductCard({ product, showSubcategoryB
               >
                 <X size={20} />
               </button>
-              <span className="absolute top-3 left-3 text-xs font-bold uppercase tracking-wider bg-[var(--orange-primary)] text-white px-3 py-1.5 rounded-lg">
+              <span className="absolute top-3 left-3 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[var(--orange-primary)] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
                 {product.category}
               </span>
             </div>
 
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-foreground">{product.name}</h3>
+            <div className="p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground">{product.name}</h3>
               
               {product.brand && (
                 <p className="text-sm text-[var(--orange-primary)] font-medium mt-1">
@@ -215,47 +218,47 @@ export const ProductCard = memo(function ProductCard({ product, showSubcategoryB
                   <Star size={14} className="text-[var(--orange-primary)] fill-[var(--orange-primary)]" />
                   <span className="font-medium">4.8</span>
                 </div>
-                <span className="text-muted-foreground text-sm">(128 avaliações)</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">(128 avaliações)</span>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-border">
-                <h4 className="font-semibold text-foreground mb-2">Descrição do Produto</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+                <h4 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Descrição do Produto</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   {product.description || `${product.name} de alta qualidade. Produto ideal para sua obra, com garantia de procedência e melhor custo-benefício da região. Disponível para entrega rápida.`}
                 </p>
               </div>
 
               {product.dimensions && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <h4 className="font-semibold text-foreground mb-2">Especificações</h4>
-                  <p className="text-sm text-muted-foreground">
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+                  <h4 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Especificações</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Dimensões: {product.dimensions}
                   </p>
                 </div>
               )}
 
-              <div className="mt-4 pt-4 border-t border-border">
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground">A partir de</p>
-                <p className="text-2xl font-bold text-foreground">{currency(product.price)}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{currency(product.price)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Em até 12x de {currency(product.price / 12)} sem juros
                 </p>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
                 <button
                   onClick={() => {
                     handleAdd()
                     setShowDetails(false)
                   }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 text-white text-sm font-bold px-4 py-3 rounded-lg bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-2 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-3 rounded-lg bg-[var(--orange-primary)] hover:bg-[var(--orange-dark)] transition-colors"
                 >
-                  <ShoppingCart size={18} />
-                  Adicionar ao Carrinho
+                  <ShoppingCart size={16} />
+                  <span className="hidden xs:inline">Adicionar ao</span> Carrinho
                 </button>
                 <button
                   onClick={handleWhatsAppClick}
-                  className="inline-flex items-center justify-center gap-2 text-white text-sm font-bold px-4 py-3 rounded-lg bg-[#25D366] hover:bg-[#20b858] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 text-white text-sm font-bold px-3 sm:px-4 py-3 rounded-lg bg-[#25D366] hover:bg-[#20b858] transition-colors"
                 >
                   <MessageCircle size={18} />
                 </button>
