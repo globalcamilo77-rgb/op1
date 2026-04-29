@@ -188,7 +188,7 @@ export default function AdminProdutosPage() {
   return (
     <>
       <AdminTopbar title="Produtos" />
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-3 sm:p-6 overflow-y-auto">
         <div
           className={`mb-6 p-4 rounded-lg border flex flex-wrap items-center gap-3 ${
             supabaseReady
@@ -238,22 +238,24 @@ export default function AdminProdutosPage() {
           </div>
 
           {supabaseReady && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={handlePull}
                 disabled={syncing !== 'idle'}
-                className="px-3 py-2 bg-secondary text-secondary-foreground rounded text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center gap-2 disabled:opacity-60"
+                className="flex-1 sm:flex-none px-3 py-2 bg-secondary text-secondary-foreground rounded text-xs sm:text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <CloudDownload size={16} />
-                {syncing === 'pull' ? 'Baixando...' : 'Baixar do Supabase'}
+                <span className="hidden sm:inline">{syncing === 'pull' ? 'Baixando...' : 'Baixar do Supabase'}</span>
+                <span className="sm:hidden">{syncing === 'pull' ? 'Baixando' : 'Baixar'}</span>
               </button>
               <button
                 onClick={handlePush}
                 disabled={syncing !== 'idle'}
-                className="px-3 py-2 bg-[var(--orange-primary)] text-white rounded text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors inline-flex items-center gap-2 disabled:opacity-60"
+                className="flex-1 sm:flex-none px-3 py-2 bg-[var(--orange-primary)] text-white rounded text-xs sm:text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <CloudUpload size={16} />
-                {syncing === 'push' ? 'Enviando...' : 'Enviar para Supabase'}
+                <span className="hidden sm:inline">{syncing === 'push' ? 'Enviando...' : 'Enviar para Supabase'}</span>
+                <span className="sm:hidden">{syncing === 'push' ? 'Enviando' : 'Enviar'}</span>
               </button>
             </div>
           )}
@@ -275,19 +277,19 @@ export default function AdminProdutosPage() {
         </div>
 
         <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-          <div className="px-4 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
+          <div className="px-3 sm:px-4 py-3 sm:py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-foreground">Gerenciar produtos</h3>
-              <p className="text-xs text-muted-foreground">
-                Produtos ativos aparecem automaticamente na loja para compra.
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Gerenciar produtos</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                Produtos ativos aparecem na loja.
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-secondary rounded p-1">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-1 bg-secondary rounded p-1 flex-1 sm:flex-none">
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-3 py-1 text-xs rounded ${
+                  className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded ${
                     filter === 'all' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
                   }`}
                 >
@@ -295,7 +297,7 @@ export default function AdminProdutosPage() {
                 </button>
                 <button
                   onClick={() => setFilter('active')}
-                  className={`px-3 py-1 text-xs rounded ${
+                  className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded ${
                     filter === 'active' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
                   }`}
                 >
@@ -303,7 +305,7 @@ export default function AdminProdutosPage() {
                 </button>
                 <button
                   onClick={() => setFilter('inactive')}
-                  className={`px-3 py-1 text-xs rounded ${
+                  className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded ${
                     filter === 'inactive' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
                   }`}
                 >
@@ -313,15 +315,75 @@ export default function AdminProdutosPage() {
 
               <button
                 onClick={openCreate}
-                className="px-4 py-2 bg-[var(--orange-primary)] text-white rounded text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors inline-flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 bg-[var(--orange-primary)] text-white rounded text-xs sm:text-sm font-semibold hover:bg-[var(--orange-dark)] transition-colors inline-flex items-center gap-1 sm:gap-2 whitespace-nowrap"
               >
-                <Plus size={16} />
-                Novo produto
+                <Plus size={14} />
+                <span className="hidden sm:inline">Novo produto</span>
+                <span className="sm:hidden">Novo</span>
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile: Cards */}
+          <div className="sm:hidden p-3 space-y-3">
+            {filteredProducts.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">Nenhum produto encontrado.</p>
+            )}
+            {filteredProducts.map((product) => (
+              <div key={product.id} className="bg-secondary/30 rounded-lg p-3 border border-border">
+                <div className="flex items-start gap-3">
+                  <div className="w-16 h-16 rounded bg-secondary overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {product.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">Sem foto</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{product.name}</p>
+                    <p className="text-xs text-muted-foreground">{product.category}</p>
+                    <p className="text-sm font-bold text-foreground mt-1">{currency(product.price)}</p>
+                  </div>
+                  <button
+                    onClick={() => toggleActive(product.id)}
+                    className={`px-2 py-1 rounded text-[10px] font-semibold ${
+                      product.active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {product.active ? 'Ativo' : 'Inativo'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                  <button
+                    onClick={() => openEdit(product)}
+                    className="flex-1 px-3 py-2 bg-secondary text-foreground rounded text-xs font-semibold inline-flex items-center justify-center gap-1"
+                  >
+                    <Pencil size={12} />
+                    Editar
+                  </button>
+                  <Link
+                    href={`/adminlr/produtos/${encodeURIComponent(product.id)}/lp`}
+                    className="px-3 py-2 bg-purple-100 text-purple-800 rounded text-xs font-semibold inline-flex items-center justify-center gap-1"
+                  >
+                    <FileText size={12} />
+                    LP
+                  </Link>
+                  <button
+                    onClick={() => removeProduct(product.id)}
+                    className="px-3 py-2 bg-red-100 text-red-700 rounded text-xs font-semibold inline-flex items-center justify-center gap-1"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-secondary">
@@ -422,13 +484,16 @@ export default function AdminProdutosPage() {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <form
             onSubmit={onSubmit}
-            className="bg-background rounded-lg shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto"
+            className="bg-background rounded-t-2xl sm:rounded-lg shadow-lg w-full sm:max-w-xl max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="text-base font-semibold text-foreground">
+            {/* Handle de arraste mobile */}
+            <div className="sm:hidden w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mt-3" />
+            
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">
                 {editing.id ? 'Editar produto' : 'Novo produto'}
               </h3>
               <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground">
@@ -436,9 +501,9 @@ export default function AdminProdutosPage() {
               </button>
             </div>
 
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-sm font-medium text-foreground">Nome</label>
+            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Nome *</label>
                 <input
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -446,15 +511,16 @@ export default function AdminProdutosPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Categoria</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Categoria *</label>
                 <input
                   value={editing.category}
                   onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+                  placeholder="Ex: Cimento, Ferro, Tijolos..."
                   className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Marca</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Marca</label>
                 <input
                   value={editing.brand || ''}
                   onChange={(e) => setEditing({ ...editing, brand: e.target.value })}
@@ -462,8 +528,8 @@ export default function AdminProdutosPage() {
                   className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
                 />
               </div>
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-sm font-medium text-foreground">Medidas / Dimensoes</label>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Medidas / Dimensoes</label>
                 <input
                   value={editing.dimensions || ''}
                   onChange={(e) => setEditing({ ...editing, dimensions: e.target.value })}
@@ -472,18 +538,19 @@ export default function AdminProdutosPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Preco (R$)</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Preco (R$) *</label>
                 <input
                   type="number"
                   step="0.01"
                   min={0}
                   value={editing.price}
                   onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })}
+                  placeholder="0.00"
                   className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Estoque</label>
+                <label className="text-xs sm:text-sm font-medium text-foreground">Estoque</label>
                 <input
                   type="number"
                   min={0}
@@ -503,8 +570,8 @@ export default function AdminProdutosPage() {
                   Produto ativo (visivel para compra)
                 </label>
               </div>
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-sm font-medium text-foreground">Imagem do produto</label>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Imagem do produto</label>
                 <div className="flex gap-3 items-start">
                   {editing.image && (
                     <div className="w-20 h-20 rounded border border-border overflow-hidden flex-shrink-0">
