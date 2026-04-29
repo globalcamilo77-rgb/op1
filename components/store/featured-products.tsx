@@ -22,7 +22,7 @@ export function FeaturedProducts() {
 
 function FeaturedProductsSkeleton() {
   return (
-    <section className="bg-background py-12 px-5">
+    <section id="produtos" className="bg-background py-12 px-5">
       <div className="max-w-6xl mx-auto">
         <div className="animate-pulse">
           <div className="h-4 w-32 bg-muted rounded mb-2" />
@@ -120,7 +120,7 @@ function FeaturedProductsInner() {
   // Se buscando e nao encontrou nada
   if (mounted && searchQuery && activeProducts.length === 0) {
     return (
-      <section className="bg-background py-12 px-5">
+      <section id="produtos" className="bg-background py-12 px-5">
         <div className="max-w-6xl mx-auto text-center">
           <Search size={48} className="mx-auto text-muted-foreground mb-4" />
           <h2 className="text-xl font-bold text-foreground mb-2">
@@ -153,7 +153,7 @@ function FeaturedProductsInner() {
   const isSearching = searchQuery.trim().length > 0
 
   return (
-    <section className="bg-background py-12 px-5">
+    <section id="produtos" className="bg-background py-12 px-5">
       <div className="max-w-6xl mx-auto">
         {isSearching ? (
           <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
