@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, MapPin, AlertTriangle, Truck, PencilLine } from 'lucide-react'
+import { CheckCircle2, MapPin, Truck, PencilLine } from 'lucide-react'
 import {
-  SERVICED_CITIES,
   detectCityFromInput,
   extractPostalCode,
   useAddressStore,
@@ -18,7 +17,6 @@ export function AddressSection() {
   const [inputAddress, setInputAddress] = useState('')
   const [number, setNumber] = useState('')
   const [complement, setComplement] = useState('')
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -28,20 +26,14 @@ export function AddressSection() {
     event.preventDefault()
     const trimmed = inputAddress.trim()
     if (!trimmed) {
-      setError('Informe o endereco ou CEP da sua obra.')
       return
     }
 
-    const city = detectCityFromInput(trimmed)
+    // Detecta cidade se possivel, senao usa "Sua região"
+    const city = detectCityFromInput(trimmed) || 'Sua região'
     const postalCode = extractPostalCode(trimmed)
 
-    if (!city) {
-      setError(
-        'Nao identificamos uma cidade atendida. Digite o nome da cidade completo ou um CEP valido da nossa area.',
-      )
-      return
-    }
-
+    // ATENDEMOS TODAS AS CIDADES - sem validação!
     const fullRaw = [trimmed, number && `n ${number}`, complement].filter(Boolean).join(', ')
     setAddress({ rawInput: fullRaw, city, postalCode })
     trackEvent('lead', {
@@ -51,7 +43,6 @@ export function AddressSection() {
         postalCode: postalCode ?? '',
       },
     })
-    setError(null)
   }
 
   const handleEdit = () => {
@@ -135,10 +126,7 @@ export function AddressSection() {
             id="address"
             placeholder="Ex: Rua Um, 1000 ou 18900-000"
             value={inputAddress}
-            onChange={(event) => {
-              setInputAddress(event.target.value)
-              if (error) setError(null)
-            }}
+            onChange={(event) => setInputAddress(event.target.value)}
             required
             className="px-3 py-2 border border-border rounded text-sm outline-none focus:border-[var(--orange-primary)] bg-background text-foreground"
           />
@@ -179,15 +167,8 @@ export function AddressSection() {
         </div>
       </form>
 
-      {error && (
-        <div className="mt-3 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
       <p className="text-[11px] text-muted-foreground mt-3">
-        <strong>Cidades atendidas:</strong> {SERVICED_CITIES.join(', ')}.
+        Atendemos <strong>todas as cidades</strong>. Entrega rapida para sua obra!
       </p>
     </div>
   )
