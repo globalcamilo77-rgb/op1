@@ -122,7 +122,7 @@ export const useAnalyticsStore = create<AnalyticsState>()(
             // Conversao de CONTATO - quando clica no WhatsApp
             if (type === 'lead') {
               dataLayer.push({
-                event: 'wa.me',
+                event: 'whatsapp_click',
                 event_category: 'contact',
                 event_label: event.meta?.type || 'whatsapp',
                 page_path: event.path,
