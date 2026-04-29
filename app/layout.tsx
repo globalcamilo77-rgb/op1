@@ -92,12 +92,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>
-        {/* Preconnect para recursos externos - melhora performance */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://www.clarity.ms" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="dns-prefetch" href="https://www.clarity.ms" />
-        
         {/* Dados estruturados - Schema.org */}
         <script
           type="application/ld+json"
@@ -124,7 +118,7 @@ export default function RootLayout({
             }),
           }}
         />
-        
+
         {/* Google Tag Manager */}
         <Script id="gtm-init" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -133,20 +127,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-KRJVRXZ3');`}
         </Script>
-        {/* End Google Tag Manager */}
-
-        {/* Google Ads (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18121021838"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'AW-18121021838');`}
-        </Script>
-        {/* End Google Ads */}
 
         {/* Microsoft Clarity */}
         <Script id="clarity-init" strategy="afterInteractive">
@@ -156,7 +136,6 @@ t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
 y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 })(window, document, "clarity", "script", "why5jbezq8");`}
         </Script>
-        {/* End Microsoft Clarity */}
       </head>
       <body className="font-sans antialiased">
         {/* Google Tag Manager (noscript) */}
@@ -169,7 +148,6 @@ y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
             title="gtm-noscript"
           />
         </noscript>
-        {/* End Google Tag Manager (noscript) */}
         <StoresHydrator />
         <AppearanceProvider />
         <AnalyticsTracker />
